@@ -2,7 +2,7 @@
 import os
 import qrcode
 
-SITE_URL = "file:///Users/Adama/Desktop/brest_stops/index.html"
+SITE_URL = "https://adambelarusets-bot.github.io/brest-stops/index.html"
 OUTPUT_DIR = os.path.expanduser("~/Desktop/brest_stops/qr_codes")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
