@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="color-scheme" content="dark">
+  <title>Остановки Бреста</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <style>
+    :root {
+      --bg: #000;
+      --panel: rgba(28, 28, 30, 0.72);
+      --panel-strong: rgba(28, 28, 30, 0.86);
+      --fill: rgba(118, 118, 128, 0.24);
+      --fill-2: rgba(118, 118, 128, 0.16);
+      --fill-3: rgba(118, 118, 128, 0.10);
+      --separator: rgba(84, 84, 88, 0.55);
+      --stroke: rgba(255, 255, 255, 0.08);
+      --blue: #0a84ff;
+      --blue-tint: rgba(10, 132, 255, 0.18);
+      --blue-text: #4da3ff;
+      --green: #30d158;
+      --orange: #ff9f0a;
+      --red: #ff453a;
+      --purple: #bf5af2;
+      --teal: #64d2ff;
+      --label: #fff;
+      --label-2: rgba(235, 235, 245, 0.6);
+      --label-3: rgba(235, 235, 245, 0.3);
+      --r-xs: 8px;
+      --r-sm: 12px;
+      --r-md: 16px;
+      --r: 20px;
+      --r-lg: 28px;
+      --blur: blur(30px) saturate(180%);
+      --shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+      --shadow-sm: 0 6px 20px rgba(0, 0, 0, 0.35);
+      --ease: cubic-bezier(0.4, 0, 0.2, 1);
+      --spring: cubic-bezier(0.32, 0.72, 0, 1);
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+      --safe-t: env(safe-area-inset-top, 0px);
+      --safe-r: env(safe-area-inset-right, 0px);
+      --safe-b: env(safe-area-inset-bottom, 0px);
+      --safe-l: env(safe-area-inset-left, 0px);
+      --header-h: 56px;
+      --header-gap: 12px;
+      --header-offset: calc(var(--safe-t) + var(--header-gap) + var(--header-h) + 12px);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0; height: 100%; background: var(--bg); color: var(--label);
+      font-family: var(--font); font-size: 15px; line-height: 1.45; font-weight: 400;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+      -webkit-tap-highlight-color: transparent; overflow: hidden;
+    }
+    button, input { font: inherit; color: inherit; }
+    button { cursor: pointer; border: 0; background: none; padding: 0; }
+    svg { display: block; flex-shrink: 0; }
+    :focus { outline: none; }
+    :focus-visible { outline: 3px solid rgba(10, 132, 255, 0.6); outline-offset: 2px; }
+    [hidden], .hidden { display: none !important; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    .glass {
+      background: var(--panel); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+      border: 1px solid var(--stroke); box-shadow: var(--shadow);
+    }
+    .glass::before {
+      content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.02) 38%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.07) 100%);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; z-index: 0;
+    }
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .glass { background: rgba(28, 28, 30, 0.96); }
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(48px) scale(0.97); } to { opacity: 1; transform: none; } }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(24px) scale(0.95); } to { opacity: 1; transform: none; } }
+    @keyframes sheetIn { from { transform: translateY(105%); } to { transform: none; } }
+    @keyframes headerIn { from { opacity: 0; transform: translate(-50%, -16px); } to { opacity: 1; transform: translate(-50%, 0); } }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(10, 132, 255, 0.55); }
+      70% { box-shadow: 0 0 0 12px rgba(10, 132, 255, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(10, 132, 255, 0); }
+    }
+    .app-header {
+      position: fixed; top: calc(var(--safe-t) + var(--header-gap)); left: 50%;
+      transform: translateX(-50%); width: min(1120px, calc(100% - 24px - var(--safe-l) - var(--safe-r)));
+      height: var(--header-h); padding: 8px 8px 8px 10px; display: flex; align-items: center;
+      gap: 12px; border-radius: var(--r-lg); z-index: 40; animation: headerIn 0.6s var(--spring) both;
+    }
+    .app-header > * { position: relative; z-index: 1; }
+    .logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; text-decoration: none; color: var(--label); user-select: none; }
+    .logo-icon {
+      width: 40px; height: 40px; border-radius: var(--r-sm); display: grid; place-items: center;
+      background: linear-gradient(145deg, #3b9dff 0%, #0a84ff 45%, #0060df 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 6px 16px rgba(10,132,255,0.4); color: #fff;
+    }
+    .logo-text { font-size: 19px; font-weight: 700; letter-spacing: -0.025em; }
+    .search-field { position: relative; flex: 1; min-width: 0; height: 40px; }
+    .search-field svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--label-2); pointer-events: none; }
+    #search {
+      width: 100%; height: 100%; padding: 0 14px 0 38px; border: 1px solid transparent;
+      border-radius: var(--r-sm); background: var(--fill); font-size: 15px; letter-spacing: -0.01em;
+    }
+    #search:focus { background: rgba(118,118,128,0.34); border-color: rgba(10,132,255,0.7); box-shadow: 0 0 0 4px rgba(10,132,255,0.22); }
+    .header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .icon-btn {
+      width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+      background: var(--fill); color: var(--label); transition: all 0.3s var(--ease);
+    }
+    .icon-btn:hover { transform: scale(1.08); background: rgba(118,118,128,0.36); box-shadow: var(--shadow-sm); }
+    .icon-btn.active { background: linear-gradient(180deg, #2b95ff, var(--blue)); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 6px 18px rgba(10,132,255,0.45); }
+    #map { position: fixed; inset: 0; z-index: 0; background: #0b0b0d; }
+    .maplibregl-ctrl-top-right, .maplibregl-ctrl-top-left { top: calc(var(--header-offset) - 4px); }
+    .maplibregl-ctrl-group {
+      background: var(--panel) !important; -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+      border: 1px solid var(--stroke); border-radius: var(--r-md) !important; box-shadow: var(--shadow-sm) !important; overflow: hidden;
+    }
+    .maplibregl-ctrl-group button { width: 38px; height: 38px; }
+    .maplibregl-popup-content {
+      background: var(--panel-strong); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+      color: var(--label); border: 1px solid var(--stroke); border-radius: var(--r-md);
+      box-shadow: var(--shadow); padding: 10px 14px; font: 500 14px/1.35 var(--font);
+    }
+    .maplibregl-popup-tip { display: none; }
+    .mini-card {
+      position: fixed; left: calc(16px + var(--safe-l)); bottom: calc(16px + var(--safe-b));
+      width: 368px; max-height: calc(100dvh - var(--header-offset) - 28px - var(--safe-b));
+      overflow-y: auto; overscroll-behavior: contain; padding: 20px; border-radius: var(--r-lg); z-index: 30; display: none;
+    }
+    .mini-card.show, .mini-card.open, .mini-card.active, .mini-card.visible, .mini-card.is-open,
+    .mini-card[style*="block"], .mini-card[style*="flex"] { display: block; animation: cardIn 0.5s var(--spring) both; }
+    #mini-title { margin: 0 0 4px; font-size: 21px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.2; }
+    #mini-addr { margin: 0; display: flex; align-items: flex-start; gap: 6px; color: var(--label-2); font-size: 14px; }
+    #mini-buses { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 16px; }
+    .bus-chip, #mini-buses > * {
+      display: inline-flex; align-items: center; justify-content: center; min-width: 38px; height: 28px;
+      padding: 0 10px; border-radius: 9px; background: var(--blue-tint); color: var(--blue-text);
+      font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;
+    }
+    #mini-info {
+      display: grid; border-radius: var(--r-md); background: var(--fill-3); border: 0.5px solid var(--stroke); overflow: hidden; font-size: 14px;
+    }
+    #mini-info > * {
+      display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 14px; margin: 0;
+    }
+    #mini-info > * + * { border-top: 0.5px solid var(--separator); }
+    .btn-primary, #mini-btn {
+      width: 100%; height: 48px; margin-top: 16px; display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; border-radius: 14px; background: linear-gradient(180deg, #2e96ff 0%, var(--blue) 100%);
+      color: #fff; font-size: 16px; font-weight: 600; box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 6px 18px rgba(10,132,255,0.32);
+      transition: all 0.3s var(--ease);
+    }
+    #mini-btn:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 10px 28px rgba(10,132,255,0.5); }
+    .stop-page {
+      position: fixed; inset: 0; z-index: 50; display: none; overflow-y: auto;
+      padding: calc(var(--safe-t) + 32px) 24px calc(var(--safe-b) + 32px);
+      background: rgba(0, 0, 0, 0.5); -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%);
+    }
+    .stop-page.show, .stop-page.open, .stop-page.active, .stop-page.visible, .stop-page.is-open,
+    .stop-page[style*="block"], .stop-page[style*="flex"] { display: block; animation: fadeIn 0.3s var(--ease) both; }
+    #stop-page-content {
+      position: relative; max-width: 880px; margin: 0 auto; padding: 28px 32px 36px;
+      border-radius: var(--r-lg); background: var(--panel-strong); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+      border: 1px solid var(--stroke); box-shadow: var(--shadow); animation: slideUp 0.6s var(--spring) both;
+    }
+    #stop-page-content::after {
+      content: ""; position: absolute; inset: 0 0 auto 0; height: 220px; border-radius: var(--r-lg) var(--r-lg) 0 0;
+      background: radial-gradient(60% 100% at 15% 0%, rgba(10,132,255,0.22), transparent 70%), radial-gradient(50% 90% at 90% 0%, rgba(191,90,242,0.14), transparent 70%);
+      pointer-events: none; z-index: 0;
+    }
+    #stop-page-content > * { position: relative; z-index: 1; }
+    .back-btn, #stop-page-content > button:first-child {
+      position: sticky; top: 0; z-index: 5; display: inline-flex; align-items: center; gap: 2px;
+      height: 36px; padding: 0 14px 0 8px; border-radius: 18px; background: rgba(58,58,60,0.7);
+      -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border: 0.5px solid var(--stroke);
+      color: var(--blue-text); font-size: 15px; font-weight: 600;
+    }
+    #stop-page-content h1 {
+      margin: 20px 0 8px; font-size: clamp(30px, 5.2vw, 46px); font-weight: 800; line-height: 1.08; letter-spacing: -0.035em;
+      background: linear-gradient(120deg, #ffffff 0%, #d6e9ff 45%, #5aaaff 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    #stop-page-content section { margin-top: 28px; }
+    #stop-page-content h2 { margin: 0 0 12px; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; }
+    #stop-page-content p { margin: 0; color: var(--label-2); font-size: 15px; line-height: 1.6; }
+    .description { padding: 18px 20px; border-radius: var(--r); background: var(--fill-3); border: 0.5px solid var(--stroke); }
+    .routes, .bus-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 10px; }
+    .routes > *, .bus-grid > * {
+      height: 60px; display: grid; place-items: center; border-radius: var(--r-md);
+      background: linear-gradient(180deg, rgba(10,132,255,0.24), rgba(10,132,255,0.12));
+      border: 0.5px solid rgba(10,132,255,0.3); color: #fff; font-size: 21px; font-weight: 700;
+    }
+    .infra { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+    .infra > * {
+      display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: var(--r-md);
+      background: var(--fill-3); border: 0.5px solid var(--stroke);
+    }
+    .infra .value { margin-left: auto; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .schedule { border-radius: var(--r); background: var(--fill-3); border: 0.5px solid var(--stroke); overflow: hidden; }
+    .schedule-row { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; }
+    .schedule-row + .schedule-row { border-top: 0.5px solid var(--separator); }
+    .times { display: flex; flex-wrap: wrap; gap: 6px; }
+    .time, .time-chip { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: var(--r-xs); background: var(--fill-2); font-size: 14px; font-weight: 500; }
+    .time.past, .time-chip.past { opacity: 0.35; }
+    .time.next, .time-chip.next { background: var(--blue); color: #fff; font-weight: 700; box-shadow: 0 4px 14px rgba(10,132,255,0.45); }
+    .nearby { display: flex; flex-wrap: wrap; gap: 8px; }
+    .nearby-btn {
+      display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px 0 16px;
+      border-radius: 14px; background: var(--fill-2); border: 0.5px solid var(--stroke); font-size: 15px; font-weight: 500;
+    }
+    #mini-map { width: 100%; height: 300px; border-radius: var(--r); overflow: hidden; border: 1px solid var(--stroke); background: #0b0b0d; }
+    @media (max-width: 640px) {
+      :root { --header-h: 52px; --header-gap: 8px; }
+      .app-header { width: calc(100% - 16px - var(--safe-l) - var(--safe-r)); padding: 6px; gap: 8px; border-radius: 26px; }
+      .logo-icon { width: 38px; height: 38px; border-radius: 11px; }
+      .logo-text { display: none; }
+      .icon-btn { width: 38px; height: 38px; }
+      .mini-card { left: calc(8px + var(--safe-l)); right: calc(8px + var(--safe-r)); bottom: calc(8px + var(--safe-b)); width: auto; padding: 18px 16px 16px; border-radius: 30px; }
+      .stop-page { padding: 0; background: #000; }
+      #stop-page-content { min-height: 100dvh; max-width: none; padding: calc(var(--safe-t) + 12px) calc(18px + var(--safe-r)) calc(var(--safe-b) + 32px) calc(18px + var(--safe-l)); border-radius: 0; border: 0; box-shadow: none; background: #000; }
+      .infra { grid-template-columns: 1fr 1fr; }
+      #mini-map { height: 240px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="app-header glass" role="banner">
+    <a class="logo" href="./">
+      <span class="logo-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="3" width="16" height="15" rx="3"/>
+          <path d="M4 11h16M8 18v2.5M16 18v2.5M9 6.5h6"/>
+          <circle cx="8" cy="14.5" r="0.9" fill="currentColor"/>
+          <circle cx="16" cy="14.5" r="0.9" fill="currentColor"/>
+        </svg>
+      </span>
+      <span class="logo-text">Брест</span>
+    </a>
+
+    <div class="search-field" role="search">
+      <label for="search" class="sr-only">Поиск остановки или маршрута</label>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m20 20-3.6-3.6"/>
+      </svg>
+      <input id="search" type="search" placeholder="Поиск остановки или маршрута" autocomplete="off">
+    </div>
+
+    <nav class="header-actions">
+      <button id="btn-style" class="icon-btn" title="Стиль карты">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/>
+          <path d="M9 4v14M15 6v14"/>
+        </svg>
+      </button>
+      <button id="btn-layers" class="icon-btn" title="Слои">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 3 9 5-9 5-9-5 9-5Z"/>
+          <path d="m3 12.5 9 5 9-5"/>
+          <path d="m3 17 9 5 9-5"/>
+        </svg>
+      </button>
+      <button id="btn-locate" class="icon-btn" title="Моё местоположение">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M21.2 2.8 2.9 10.1c-.8.3-.7 1.4.1 1.6l7 1.9 1.9 7c.2.8 1.3.9 1.6.1l7.3-18.3c.3-.7-.4-1.4-1.1-1.1Z"/>
+        </svg>
+      </button>
+    </nav>
+  </header>
+
+  <main id="map"></main>
+
+  <aside id="mini-card" class="mini-card glass">
+    <h2 id="mini-title"></h2>
+    <p id="mini-addr"></p>
+    <div id="mini-buses"></div>
+    <div id="mini-info"></div>
+    <button id="mini-btn">Подробнее →</button>
+  </aside>
+
+  <div id="stop-page" class="stop-page">
+    <div id="stop-page-content"></div>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+  <script>
+    // === ДАННЫЕ ОСТАНОВОК ===
+    const STOPS = [
+      { id: "rechickaya", name: "Речицкая", address: "ул. Речицкая", coords: [23.650751, 52.10737], built: "1978", state: "good", surface: "asphalt", has_square: false, has_shop: false, bins: 3, benches: 4, trees: 2, trainers: false, buses: ["5","9","9а","9Д","44","44а","50","52а","54","57а"], schedule: { "9": ["05:32","06:05","06:36","07:09","07:38","08:12","08:54","09:55","10:55","11:50","12:55","14:02","14:58","16:02","17:00","18:00","18:50","20:00","21:30","22:40","23:45"], "44": ["05:55","06:21","06:52","07:27","08:10","16:35","17:04","17:38","18:17"], "50": ["06:00","06:30","07:00","07:30","08:00","08:30","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00"] }, description: "Центральная остановка микрорайона Речица.", nearby: ["hlebprom", "shkola"] },
+      { id: "hlebprom", name: "Хлебпром", address: "ул. Речицкая", coords: [23.643882, 52.106538], built: "1982", state: "good", surface: "asphalt", has_square: false, has_shop: false, bins: 2, benches: 3, trees: 1, trainers: false, buses: ["9","9а","44","44а","50"], schedule: { "9": ["05:34","06:07","06:38","07:11","07:40","08:14","08:56","09:57","10:57","11:52","12:57","14:04","15:00","16:04","17:02","18:02","18:52","20:02","21:32","22:42","23:47"], "44": ["05:57","06:23","06:54","07:29","08:12","16:37","17:06","17:40","18:19"], "50": ["06:02","06:32","07:02","07:32","08:02","08:32","09:02","10:02","11:02","12:02","13:02","14:02","15:02","16:02","17:02","18:02","19:02","20:02","21:02"] }, description: "Остановка у предприятия «Хлебпром».", nearby: ["rechickaya", "shkola"] },
+      { id: "shkola", name: "Школа", address: "ул. Речицкая", coords: [23.647433, 52.103296], built: "1985", state: "satisfactory", surface: "tile", has_square: true, has_shop: false, bins: 3, benches: 5, trees: 4, trainers: true, buses: ["9","9а","44","44а","50"], schedule: { "9": ["05:36","06:09","06:40","07:13","07:42","08:16","08:58","09:59","10:59","11:54","12:59","14:06","15:02","16:06","17:04","18:04","18:54","20:04","21:34","22:44","23:49"], "44": ["05:59","06:25","06:56","07:31","08:14","16:39","17:08","17:42","18:21"], "50": ["06:04","06:34","07:04","07:34","08:04","08:34","09:04","10:04","11:04","12:04","13:04","14:04","15:04","16:04","17:04","18:04","19:04","20:04","21:04"] }, description: "Остановка рядом со школой.", nearby: ["hlebprom", "agrotrans"] },
+      { id: "agrotrans", name: "Агротранс", address: "ул. Речицкая", coords: [23.649697, 52.098582], built: "1990", state: "good", surface: "asphalt", has_square: false, has_shop: true, bins: 2, benches: 2, trees: 1, trainers: false, buses: ["5","9","9а","44","44а","50","54"], schedule: { "9": ["05:37","06:10","06:41","07:14","07:43","08:17","08:59","10:00","11:00","11:55","13:00","14:07","15:03","16:07","17:05","18:05","18:55","20:05","21:35","22:45","23:50"], "44": ["06:00","06:26","06:57","07:32","08:15","16:40","17:09","17:43","18:22"], "50": ["06:05","06:35","07:05","07:35","08:05","08:35","09:05","10:05","11:05","12:05","13:05","14:05","15:05","16:05","17:05","18:05","19:05","20:05","21:05"] }, description: "Остановка у предприятия «Агротранс».", nearby: ["shkola", "rybtorg"] },
+      { id: "rybtorg", name: "База «Рыбторг»", address: "ул. Речицкая", coords: [23.650102, 52.094773], built: "1988", state: "bad", surface: "grass", has_square: false, has_shop: false, bins: 0, benches: 1, trees: 0, trainers: false, buses: ["9","9а","44","44а"], schedule: { "9": ["05:39","06:12","06:43","07:16","07:45","08:19","09:01","10:02","11:02","11:57","13:02","14:09","15:05","16:09","17:07","18:07","18:57","20:07","21:37","22:47","23:52"], "44": ["06:02","06:28","06:59","07:34","08:17","16:42","17:11","17:45","18:24"] }, description: "Остановка у базы «Рыбторг».", nearby: ["agrotrans", "myasokombinat"] },
+      { id: "myasokombinat", name: "Мясокомбинат", address: "ул. Писателя Смирнова", coords: [23.644367, 52.094866], built: "1975", state: "good", surface: "tile", has_square: true, has_shop: true, bins: 4, benches: 5, trees: 6, trainers: true, buses: ["9","9а","9Д","44","44а","50"], schedule: { "9": ["05:43","06:16","06:47","07:20","07:49","08:23","09:05","10:06","11:06","12:01","13:06","14:13","15:09","16:13","17:11","18:11","19:01","20:11","21:41","22:51","23:56"], "44": ["05:55","06:21","06:52","07:27","08:10","16:35","17:04","17:38","18:17"], "50": ["06:00","06:30","07:00","07:30","08:00","08:30","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00"] }, description: "Конечная маршрута №9.", nearby: ["rybtorg", "rechickaya"] }
+    ];
+
+    // === КАРТА ===
+    const MAPTILER_KEY = 'jglHccatCYM4tRmZ1J1w';
+    const MAP_STYLES = {
+      streets: `https://api.maptiler.com/maps/streets-v2-dark/style.json?key=${MAPTILER_KEY}`,
+      satellite: `https://api.maptiler.com/maps/hybrid/style.json?key=${MAPTILER_KEY}`,
+      basic: `https://api.maptiler.com/maps/basic-v2-dark/style.json?key=${MAPTILER_KEY}`
+    };
+
+    let map, markers = {}, currentStyle = 'streets', userMarker = null, layerMode = 'state';
+
+    function initMap() {
+      map = new maplibregl.Map({
+        container: 'map', style: MAP_STYLES[currentStyle],
+        center: [23.648, 52.102], zoom: 14, pitch: 50, bearing: -15
+      });
+      map.on('load', () => { addMarkers(); });
+    }
+
+    function addMarkers() {
+      Object.values(markers).forEach(m => m.remove());
+      markers = {};
+      STOPS.forEach(stop => {
+        const el = document.createElement('div');
+        let color = '#30d158';
+        if (layerMode === 'state') {
+          if (stop.state === 'satisfactory') color = '#ff9f0a';
+          if (stop.state === 'bad') color = '#ff453a';
+        } else if (layerMode === 'surface') {
+          color = stop.surface === 'asphalt' ? '#8e8e93' : stop.surface === 'tile' ? '#5ac8fa' : '#30d158';
+        } else if (layerMode === 'objects') {
+          color = (stop.has_square && stop.has_shop) ? '#30d158' : (stop.has_square || stop.has_shop) ? '#ff9f0a' : '#ff453a';
+        }
+        el.style.cssText = `width:30px;height:30px;background:${color};border:3px solid #fff;border-radius:50%;cursor:pointer;box-shadow:0 4px 16px ${color}99;transition:transform 0.2s ease;`;
+        el.addEventListener('mouseenter', () => el.style.transform = 'scale(1.3)');
+        el.addEventListener('mouseleave', () => el.style.transform = 'scale(1)');
+        const marker = new maplibregl.Marker({ element: el }).setLngLat(stop.coords).addTo(map);
+        el.addEventListener('click', () => showMiniCard(stop.id));
+        markers[stop.id] = marker;
+      });
+    }
+
+    function showMiniCard(stopId) {
+      const stop = STOPS.find(s => s.id === stopId);
+      if (!stop) return;
+      document.getElementById('mini-title').textContent = stop.name;
+      document.getElementById('mini-addr').textContent = '📍 ' + stop.address;
+      document.getElementById('mini-buses').innerHTML = stop.buses.slice(0, 5).map(b => `<span class="bus-chip">${b}</span>`).join('');
+      const surfaceText = stop.surface === 'tile' ? 'Плитка' : stop.surface === 'grass' ? 'Трава' : 'Асфальт';
+      document.getElementById('mini-info').innerHTML = `
+        <div><span class="ico blue">🟢</span> Состояние: ${stop.state === 'good' ? 'Хорошее' : stop.state === 'satisfactory' ? 'Удовл.' : 'Требует внимания'}</div>
+        <div><span class="ico green">🛣</span> Покрытие: ${surfaceText}</div>
+        <div><span class="ico orange">🌳</span> Сквер: ${stop.has_square ? 'Есть' : 'Нет'}</div>
+        <div><span class="ico purple">🛒</span> Магазин: ${stop.has_shop ? 'Есть' : 'Нет'}</div>
+        <div><span class="ico teal">🗑</span> Урны: ${stop.bins} шт.</div>
+        <div><span class="ico blue">🪑</span> Лавочки: ${stop.benches} шт.</div>
+        <div><span class="ico green">🌲</span> Деревья: ${stop.trees} шт.</div>
+        <div><span class="ico orange">🏋️</span> Тренажеры: ${stop.trainers ? 'Есть' : 'Нет'}</div>
+      `;
+      document.getElementById('mini-btn').onclick = () => openStopPage(stop.id);
+      document.getElementById('mini-card').classList.add('show');
+    }
+
+    document.getElementById('btn-style').addEventListener('click', () => {
+      const order = ['streets', 'satellite', 'basic'];
+      currentStyle = order[(order.indexOf(currentStyle) + 1) % order.length];
+      map.setStyle(MAP_STYLES[currentStyle]);
+      map.once('styledata', addMarkers);
+    });
+
+    document.getElementById('btn-layers').addEventListener('click', () => {
+      const modes = ['state', 'surface', 'objects'];
+      layerMode = modes[(modes.indexOf(layerMode) + 1) % modes.length];
+      addMarkers();
+    });
+
+    document.getElementById('btn-locate').addEventListener('click', () => {
+      if (!navigator.geolocation) return alert('Геолокация не поддерживается');
+      navigator.geolocation.watchPosition((pos) => {
+        const { latitude, longitude } = pos.coords;
+        if (!userMarker) {
+          const el = document.createElement('div');
+          el.style.cssText = `width:20px;height:20px;background:#0a84ff;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 8px rgba(10,132,255,0.3);`;
+          userMarker = new maplibregl.Marker({ element: el }).setLngLat([longitude, latitude]).addTo(map);
+        } else userMarker.setLngLat([longitude, latitude]);
+        map.flyTo({ center: [longitude, latitude], zoom: 16 });
+      }, (err) => alert('Ошибка GPS: ' + err.message), { enableHighAccuracy: true });
+    });
+
+    function openStopPage(stopId) {
+      const stop = STOPS.find(s => s.id === stopId);
+      if (!stop) return;
+      document.getElementById('mini-card').classList.remove('show');
+      document.getElementById('stop-page-content').innerHTML = `
+        <button class="back-btn" onclick="closeStopPage()">← Назад</button>
+        <h1>${stop.name}</h1>
+        <p class="stop-meta"><span class="addr">${stop.address}</span><span class="year">с ${stop.built} года</span></p>
+        <section><h2>Маршруты</h2><div class="routes">${stop.buses.map(b => `<span>${b}</span>`).join('')}</div></section>
+        <section><h2>Описание</h2><div class="description">${stop.description}</div></section>
+        <section><h2>Инфраструктура</h2><ul class="infra">
+          <li><span class="ico teal">🗑</span> Урны <span class="value">${stop.bins}</span></li>
+          <li><span class="ico blue">🪑</span> Лавочки <span class="value">${stop.benches}</span></li>
+          <li><span class="ico green">🌲</span> Деревья <span class="value">${stop.trees}</span></li>
+          <li><span class="ico orange">🏋️</span> Тренажеры <span class="value">${stop.trainers ? 'Есть' : 'Нет'}</span></li>
+          <li><span class="ico orange">🌳</span> Сквер <span class="value">${stop.has_square ? 'Есть' : 'Нет'}</span></li>
+          <li><span class="ico purple">🛒</span> Магазин <span class="value">${stop.has_shop ? 'Есть' : 'Нет'}</span></li>
+        </ul></section>
+        <section><h2>Расписание</h2><div class="schedule">${Object.entries(stop.schedule).map(([bus, times]) => `<div class="schedule-row"><span class="bus-chip">${bus}</span><div class="times">${times.map(t => `<span class="time-chip">${t}</span>`).join('')}</div></div>`).join('')}</div></section>
+        <section><h2>Рядом</h2><div class="nearby">${stop.nearby.map(id => { const n = STOPS.find(s => s.id === id); return n ? `<button class="nearby-btn" onclick="openStopPage('${n.id}')">${n.name} →</button>` : ''; }).join('')}</div></section>
+        <section><h2>На карте</h2><div id="mini-map"></div></section>
+      `;
+      document.getElementById('stop-page').classList.add('show');
+      setTimeout(() => {
+        if (window.miniMap) window.miniMap.remove();
+        window.miniMap = new maplibregl.Map({
+          container: 'mini-map', style: MAP_STYLES[currentStyle],
+          center: stop.coords, zoom: 16, pitch: 50, bearing: -15
+        });
+        const el = document.createElement('div');
+        el.style.cssText = `width:36px;height:36px;background:linear-gradient(135deg,#0a84ff,#0064d1);border:4px solid #fff;border-radius:50%;box-shadow:0 6px 24px rgba(10,132,255,0.7);`;
+        new maplibregl.Marker({ element: el }).setLngLat(stop.coords).addTo(window.miniMap);
+      }, 100);
+    }
+
+    function closeStopPage() {
+      document.getElementById('stop-page').classList.remove('show');
+      if (window.miniMap) { window.miniMap.remove(); window.miniMap = null; }
+    }
+
+    document.getElementById('search').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      const filtered = STOPS.filter(s => s.name.toLowerCase().includes(q) || s.buses.some(b => b.toLowerCase().includes(q)));
+      if (filtered.length === 1) map.flyTo({ center: filtered[0].coords, zoom: 16 });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => { initMap(); });
+  </script>
+</body>
+</html>

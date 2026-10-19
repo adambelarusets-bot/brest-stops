@@ -1,1361 +1,1267 @@
-mkdir -p ~/Desktop/brest_stops
-cd ~/Desktop/brest_stops
-
-# Удаляем старый
-rm -f index.html
-
-cat > index.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#000000">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Остановки Бреста</title>
-
-<!-- MapLibre GL -->
-<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<!-- QR Code -->
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-
 <style>
-/* ═══════════════════════════════════════════════════════════════
-   🍎 APPLE STYLE — SF Pro, Liquid Glass, Premium
-   ═══════════════════════════════════════════════════════════════ */
-
-:root {
-  --bg: #000000;
-  --bg-elevated: rgba(28, 28, 30, 0.72);
-  --bg-glass: rgba(28, 28, 30, 0.6);
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --border-elevated: rgba(255, 255, 255, 0.12);
-  --text: #ffffff;
-  --text-secondary: rgba(235, 235, 245, 0.6);
-  --text-tertiary: rgba(235, 235, 245, 0.3);
-  --accent: #0a84ff;
-  --accent-hover: #409cff;
-  --success: #30d158;
-  --warning: #ff9f0a;
-  --danger: #ff453a;
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.6);
-  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
-}
-
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-html, body {
-  height: 100%;
-  overflow: hidden;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  letter-spacing: -0.02em;
-}
-
-/* ═══ MAP ═══ */
-#map {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-}
-
-/* ═══ HEADER ═══ */
-.header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.4) 70%, transparent 100%);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  pointer-events: none;
-}
-
-.header > * { pointer-events: auto; }
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
-  background: var(--bg-elevated);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-md);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.logo-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, var(--accent) 0%, #0064d1 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.4);
-}
-
-.search-wrap {
-  flex: 1;
-  max-width: 380px;
-  position: relative;
-}
-
-.search-input {
-  width: 100%;
-  padding: 10px 16px 10px 38px;
-  background: var(--bg-elevated);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-md);
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 15px;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  outline: none;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.search-input:focus {
-  border-color: var(--accent);
-  background: rgba(28, 28, 30, 0.85);
-  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
-}
-
-.search-input::placeholder { color: var(--text-tertiary); }
-
-.search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 14px;
-  color: var(--text-tertiary);
-  pointer-events: none;
-}
-
-.header-buttons {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-}
-
-.btn-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: var(--bg-elevated);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-glass);
-  color: var(--text);
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.btn-icon:hover {
-  background: rgba(58, 58, 60, 0.8);
-  border-color: var(--border-elevated);
-  transform: scale(1.05);
-}
-
-.btn-icon:active {
-  transform: scale(0.95);
-}
-
-.btn-icon.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.4);
-}
-
-/* ═══ STOPS PANEL ═══ */
-.stops-panel {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  padding: 20px 16px 24px;
-  background: linear-gradient(0deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.7) 60%, transparent 100%);
-  pointer-events: none;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-}
-
-.stops-panel.hidden {
-  transform: translateY(100%);
-  opacity: 0;
-}
-
-.stops-scroll {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding: 4px 4px 12px;
-  pointer-events: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x mandatory;
-}
-
-.stops-scroll::-webkit-scrollbar { display: none; }
-
-.stop-card {
-  flex-shrink: 0;
-  width: 260px;
-  padding: 18px;
-  background: var(--bg-elevated);
-  backdrop-filter: saturate(180%) blur(30px);
-  -webkit-backdrop-filter: saturate(180%) blur(30px);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  scroll-snap-align: start;
-  position: relative;
-  overflow: hidden;
-}
-
-.stop-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: var(--radius-lg);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  pointer-events: none;
-}
-
-.stop-card:hover {
-  transform: translateY(-4px) scale(1.02);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: var(--shadow-lg);
-}
-
-.stop-card:active {
-  transform: translateY(-2px) scale(1.0);
-}
-
-.stop-name {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  margin-bottom: 4px;
-  color: var(--text);
-}
-
-.stop-address {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-bottom: 12px;
-  font-weight: 400;
-}
-
-.stop-buses {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.bus-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 32px;
-  height: 26px;
-  padding: 0 8px;
-  background: rgba(10, 132, 255, 0.15);
-  border: 1px solid rgba(10, 132, 255, 0.3);
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #5ac8fa;
-  letter-spacing: -0.01em;
-}
-
-/* ═══ STOP PAGE ═══ */
-.stop-page {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: var(--bg);
-  overflow-y: auto;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(20px);
-  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              visibility 0.4s ease,
-              transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.stop-page.active {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.stop-page-content {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 88px 20px 80px;
-}
-
-/* Back button */
-.back-btn {
-  position: fixed;
-  top: 16px;
-  left: 16px;
-  z-index: 210;
-  height: 40px;
-  padding: 0 16px 0 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--bg-elevated);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-md);
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 15px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.back-btn:hover {
-  background: rgba(58, 58, 60, 0.85);
-  transform: translateX(-2px);
-}
-
-.back-btn:active {
-  transform: scale(0.96);
-}
-
-/* Hero */
-.hero {
-  margin-bottom: 28px;
-  animation: fadeUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hero-title {
-  font-size: 40px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-  margin-bottom: 8px;
-  background: linear-gradient(135deg, #ffffff 0%, #a1a1a6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.hero-address {
-  font-size: 17px;
-  color: var(--text-secondary);
-  font-weight: 400;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.hero-badge {
-  display: inline-block;
-  margin-top: 14px;
-  padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border-glass);
-  border-radius: 100px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-/* Next bus */
-.next-bus {
-  padding: 24px;
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.18) 0%, rgba(28, 28, 30, 0.9) 100%);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(10, 132, 255, 0.3);
-  border-radius: var(--radius-xl);
-  margin-bottom: 20px;
-  position: relative;
-  overflow: hidden;
-  animation: fadeUp 0.5s 0.05s cubic-bezier(0.4, 0, 0.2, 1) backwards;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-}
-
-.next-bus::before {
-  content: "";
-  position: absolute;
-  top: -50%;
-  right: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle at 30% 30%, rgba(10, 132, 255, 0.15) 0%, transparent 60%);
-  animation: rotateGlow 12s linear infinite;
-}
-
-@keyframes rotateGlow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.next-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #5ac8fa;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-  position: relative;
-  z-index: 1;
-}
-
-.next-row {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  position: relative;
-  z-index: 1;
-  flex-wrap: wrap;
-}
-
-.next-number {
-  font-size: 56px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  color: #ffffff;
-}
-
-.next-time {
-  font-size: 15px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.next-in {
-  margin-left: auto;
-  padding: 8px 14px;
-  background: rgba(48, 209, 88, 0.15);
-  border: 1px solid rgba(48, 209, 88, 0.3);
-  border-radius: 100px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--success);
-  letter-spacing: -0.01em;
-}
-
-/* Section */
-.section {
-  margin-bottom: 28px;
-  animation: fadeUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
-}
-
-.section:nth-child(3) { animation-delay: 0.1s; }
-.section:nth-child(4) { animation-delay: 0.15s; }
-.section:nth-child(5) { animation-delay: 0.2s; }
-.section:nth-child(6) { animation-delay: 0.25s; }
-
-.section-title {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin-bottom: 14px;
-  color: var(--text);
-}
-
-/* Buses grid */
-.buses-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 10px;
-}
-
-.bus-item {
-  padding: 16px 8px;
-  background: var(--bg-elevated);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-md);
-  text-align: center;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
-}
-
-.bus-item:hover {
-  border-color: rgba(10, 132, 255, 0.5);
-  background: rgba(10, 132, 255, 0.1);
-  transform: translateY(-2px);
-}
-
-/* Schedule */
-.schedule-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.schedule-row {
-  display: flex;
-  gap: 14px;
-  padding: 14px 16px;
-  background: var(--bg-elevated);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-md);
-  align-items: flex-start;
-  transition: all 0.2s ease;
-}
-
-.schedule-row:hover {
-  border-color: var(--border-elevated);
-}
-
-.schedule-bus {
-  width: 44px;
-  flex-shrink: 0;
-  text-align: center;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #5ac8fa;
-  padding-top: 2px;
-}
-
-.schedule-times {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  flex: 1;
-}
-
-.time-chip {
-  display: inline-block;
-  padding: 5px 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid transparent;
-  border-radius: 7px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-  letter-spacing: -0.01em;
-  font-variant-numeric: tabular-nums;
-  transition: all 0.2s ease;
-}
-
-.time-chip.past {
-  opacity: 0.35;
-  color: var(--text-tertiary);
-}
-
-.time-chip.next {
-  background: var(--accent);
-  color: #ffffff;
-  border-color: var(--accent);
-  box-shadow: 0 2px 12px rgba(10, 132, 255, 0.5);
-  font-weight: 700;
-}
-
-/* Mini map */
-#mini-map {
-  height: 280px;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 1px solid var(--border-glass);
-  box-shadow: var(--shadow-md);
-}
-
-/* Nearby */
-.nearby-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.nearby-btn {
-  padding: 12px 18px;
-  background: var(--bg-elevated);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-md);
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 15px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.nearby-btn:hover {
-  border-color: var(--border-elevated);
-  background: rgba(58, 58, 60, 0.8);
-  transform: translateY(-2px);
-}
-
-.nearby-btn:active {
-  transform: scale(0.98);
-}
-
-/* Description */
-.description {
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--text-secondary);
-  padding: 16px 18px;
-  background: var(--bg-elevated);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-glass);
-}
-
-/* ═══ QR PAGE ═══ */
-.qr-page {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: var(--bg);
-  overflow-y: auto;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(20px);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.qr-page.active {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.qr-content {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 88px 20px 60px;
-}
-
-.qr-header h1 {
-  font-size: 40px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  margin-bottom: 8px;
-}
-
-.qr-header p {
-  font-size: 15px;
-  color: var(--text-secondary);
-  font-weight: 400;
-}
-
-.qr-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
-  margin-top: 28px;
-}
-
-.qr-card {
-  padding: 20px;
-  background: var(--bg-elevated);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-lg);
-  text-align: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: fadeUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
-}
-
-.qr-card:hover {
-  border-color: var(--border-elevated);
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
-
-.qr-card h3 {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  margin-bottom: 4px;
-}
-
-.qr-card .qr-addr {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: 14px;
-}
-
-.qr-card canvas {
-  background: #ffffff;
-  padding: 10px;
-  border-radius: var(--radius-sm);
-  display: block;
-  margin: 0 auto;
-  max-width: 100%;
-}
-
-/* ═══ ANIMATIONS ═══ */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ═══ MAP STYLES — MapTiler ═══ */
-.maplibregl-popup-content {
-  background: rgba(28, 28, 30, 0.92) !important;
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  border: 1px solid var(--border-elevated) !important;
-  border-radius: var(--radius-lg) !important;
-  padding: 16px !important;
-  color: var(--text) !important;
-  box-shadow: var(--shadow-lg) !important;
-  font-family: var(--font) !important;
-  min-width: 240px;
-}
-
-.maplibregl-popup-tip {
-  border-top-color: rgba(28, 28, 30, 0.92) !important;
-  border-bottom-color: rgba(28, 28, 30, 0.92) !important;
-}
-
-.maplibregl-popup-close-button {
-  color: var(--text-secondary) !important;
-  font-size: 22px !important;
-  padding: 4px 10px !important;
-  border-radius: 0 var(--radius-lg) 0 0;
-}
-
-.maplibregl-popup-close-button:hover {
-  color: var(--text) !important;
-  background: rgba(255, 255, 255, 0.06) !important;
-}
-
-.maplibregl-ctrl-attrib {
-  background: rgba(0, 0, 0, 0.5) !important;
-  color: var(--text-tertiary) !important;
-  font-size: 10px !important;
-}
-
-.maplibregl-ctrl-attrib a { color: var(--text-secondary) !important; }
-
-/* Popup */
-.popup-title {
-  font-size: 17px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  margin-bottom: 6px;
-  color: var(--text);
-}
-
-.popup-addr {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-bottom: 12px;
-}
-
-.popup-buses {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-bottom: 14px;
-}
-
-.popup-btn {
-  width: 100%;
-  padding: 10px;
-  background: var(--accent);
-  border: none;
-  border-radius: var(--radius-sm);
-  color: #ffffff;
-  font-family: var(--font);
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.popup-btn:hover {
-  background: var(--accent-hover);
-  transform: translateY(-1px);
-}
-
-.popup-btn:active {
-  transform: scale(0.98);
-}
-
-/* ═══ MOBILE ═══ */
-@media (max-width: 768px) {
-  .header { padding: 10px 12px; gap: 8px; }
-  .logo { padding: 8px 12px; font-size: 14px; }
-  .logo-icon { width: 20px; height: 20px; font-size: 12px; }
-  .search-wrap { max-width: none; }
-  .hero-title { font-size: 30px; }
-  .next-number { font-size: 44px; }
-  .stop-card { width: 220px; }
-  .stop-page-content, .qr-content { padding-top: 76px; }
-  .qr-header h1 { font-size: 30px; }
-}
-
-/* ═══ SCROLLBAR ═══ */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
-
-/* ═══ LOADING ═══ */
-.loading-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-  background: var(--bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 20px;
-  transition: opacity 0.5s ease, visibility 0.5s ease;
-}
-
-.loading-overlay.hidden {
-  opacity: 0;
-  visibility: hidden;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-text {
-  font-size: 14px;
-  color: var(--text-secondary);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-}
+  :root {
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --text: #1d1d1f;
+    --text-2: rgba(60, 60, 67, 0.72);
+    --text-3: rgba(60, 60, 67, 0.48);
+    --glass-bg: rgba(255, 255, 255, 0.52);
+    --glass-bg-strong: rgba(255, 255, 255, 0.72);
+    --glass-tint: linear-gradient(160deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.18) 45%, rgba(255,255,255,0.32) 100%);
+    --glass-border: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.25) 35%, rgba(255,255,255,0.05) 60%, rgba(255,255,255,0.7) 100%);
+    --fill: rgba(118, 118, 128, 0.12);
+    --fill-2: rgba(118, 118, 128, 0.2);
+    --separator: rgba(60, 60, 67, 0.14);
+    --shadow: 0 24px 64px rgba(0, 0, 0, 0.16), 0 4px 14px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255,255,255,0.6);
+    --accent: #0a84ff;
+    --accent-soft: rgba(10, 132, 255, 0.14);
+    --good: #34c759;
+    --satisfactory: #ff9f0a;
+    --bad: #ff3b30;
+    --ease: cubic-bezier(0.32, 0.72, 0, 1);
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --radius-xl: 28px;
+    --radius-l: 20px;
+    --radius-m: 14px;
+    --radius-s: 10px;
+  }
+  body.dark {
+    --text: #f5f5f7;
+    --text-2: rgba(235, 235, 245, 0.7);
+    --text-3: rgba(235, 235, 245, 0.42);
+    --glass-bg: rgba(30, 30, 34, 0.48);
+    --glass-bg-strong: rgba(36, 36, 40, 0.72);
+    --glass-tint: linear-gradient(160deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.08) 100%);
+    --glass-border: linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.08) 35%, rgba(255,255,255,0.02) 60%, rgba(255,255,255,0.28) 100%);
+    --fill: rgba(118, 118, 128, 0.24);
+    --fill-2: rgba(118, 118, 128, 0.34);
+    --separator: rgba(84, 84, 88, 0.5);
+    --shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.12);
+    --accent-soft: rgba(10, 132, 255, 0.24);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: var(--font);
+    color: var(--text);
+    background: #e9ecef;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "kern", "liga", "tnum";
+    letter-spacing: -0.01em;
+    transition: color .4s var(--ease);
+  }
+  body.dark { background: #111; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  input { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+
+  /* ---------- MAP ---------- */
+  #map { position: fixed; inset: 0; z-index: 0; }
+  .maplibregl-ctrl-attrib { font-size: 10px; }
+  .maplibregl-ctrl-bottom-right { z-index: 1; }
+
+  /* ---------- LIQUID GLASS ---------- */
+  .glass {
+    position: relative;
+    background: var(--glass-bg);
+    background-image: var(--glass-tint);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    backdrop-filter: blur(40px) saturate(200%);
+    box-shadow: var(--shadow);
+    border-radius: var(--radius-xl);
+    isolation: isolate;
+  }
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: var(--glass-border);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .glass::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(120% 60% at 20% 0%, rgba(255,255,255,0.35), transparent 60%);
+    opacity: .55;
+    pointer-events: none;
+    z-index: -1;
+  }
+  body.dark .glass::after { opacity: .18; }
+
+  /* ---------- HEADER ---------- */
+  .header {
+    position: fixed;
+    top: max(14px, env(safe-area-inset-top));
+    left: 14px; right: 14px;
+    z-index: 20;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 10px 0 14px;
+    border-radius: 22px;
+    animation: dropIn .8s var(--ease) both;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; user-select: none; }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 11px;
+    display: grid; place-items: center;
+    background: linear-gradient(145deg, #3aa0ff, #0a5cff);
+    box-shadow: 0 6px 16px rgba(10, 100, 255, 0.35), inset 0 1px 0 rgba(255,255,255,0.45);
+    color: #fff;
+  }
+  .logo-text { display: flex; flex-direction: column; line-height: 1.1; }
+  .logo-text b { font-size: 15px; font-weight: 650; letter-spacing: -0.02em; }
+  .logo-text span { font-size: 11.5px; color: var(--text-2); }
+
+  .search-wrap { position: relative; flex: 1; max-width: 520px; margin: 0 auto; }
+  .search-field {
+    display: flex; align-items: center; gap: 8px;
+    height: 38px; padding: 0 12px;
+    border-radius: 12px;
+    background: var(--fill);
+    transition: background .25s var(--ease), box-shadow .25s var(--ease);
+  }
+  .search-field:focus-within { background: var(--glass-bg-strong); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .search-field svg { flex-shrink: 0; color: var(--text-3); }
+  #search { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 14.5px; }
+  #search::placeholder { color: var(--text-3); }
+  .kbd {
+    font-size: 11px; color: var(--text-3); padding: 2px 6px; border-radius: 6px;
+    border: 1px solid var(--separator); flex-shrink: 0;
+  }
+  .search-results {
+    position: absolute; top: calc(100% + 10px); left: 0; right: 0;
+    list-style: none; padding: 6px;
+    border-radius: 18px;
+    opacity: 0; transform: translateY(-6px) scale(.98); pointer-events: none;
+    transition: opacity .22s var(--ease), transform .3s var(--ease);
+    transform-origin: top center;
+    max-height: 60vh; overflow: auto;
+  }
+  .search-results.open { opacity: 1; transform: none; pointer-events: auto; }
+  .search-results li {
+    display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; cursor: pointer;
+    transition: background .15s;
+  }
+  .search-results li[aria-selected="true"], .search-results li:hover { background: var(--fill); }
+  .search-results .r-name { font-weight: 590; font-size: 14px; }
+  .search-results .r-sub { font-size: 12px; color: var(--text-2); }
+  .search-results .empty { color: var(--text-2); font-size: 13px; justify-content: center; cursor: default; }
+  .search-results .empty:hover { background: none; }
+  mark { background: var(--accent-soft); color: inherit; border-radius: 4px; padding: 0 1px; }
+
+  .actions { display: flex; gap: 6px; flex-shrink: 0; position: relative; }
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: grid; place-items: center;
+    color: var(--text);
+    transition: background .2s var(--ease), transform .35s var(--spring), color .2s;
+  }
+  .icon-btn:hover { background: var(--fill); }
+  .icon-btn:active { transform: scale(.9); }
+  .icon-btn[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); }
+  .icon-btn.loading svg { animation: spin 1s linear infinite; }
+  .icon-btn.located { color: var(--accent); }
+
+  .popover {
+    position: absolute; top: calc(100% + 16px); right: 0;
+    width: 260px; padding: 8px;
+    border-radius: 20px;
+    opacity: 0; transform: translateY(-8px) scale(.96); pointer-events: none;
+    transform-origin: top right;
+    transition: opacity .22s var(--ease), transform .35s var(--ease);
+  }
+  .popover.open { opacity: 1; transform: none; pointer-events: auto; }
+  .popover h4 { font-size: 11.5px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; padding: 8px 10px 6px; }
+  .pop-item {
+    width: 100%; display: flex; align-items: center; gap: 12px;
+    padding: 9px 10px; border-radius: 12px; text-align: left; font-size: 14px;
+    transition: background .15s;
+  }
+  .pop-item:hover { background: var(--fill); }
+  .swatch { width: 30px; height: 22px; border-radius: 7px; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+  .pop-item .check { margin-left: auto; color: var(--accent); opacity: 0; transition: opacity .2s; }
+  .pop-item[aria-checked="true"] .check { opacity: 1; }
+
+  .switch { margin-left: auto; width: 38px; height: 23px; border-radius: 99px; background: var(--fill-2); position: relative; transition: background .25s var(--ease); flex-shrink: 0; }
+  .switch::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 19px; height: 19px; border-radius: 50%;
+    background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.2); transition: transform .35s var(--spring);
+  }
+  .pop-item[aria-checked="true"] .switch { background: var(--good); }
+  .pop-item[aria-checked="true"] .switch::after { transform: translateX(15px); }
+
+  /* ---------- MARKERS ---------- */
+  /* Корневой элемент маркера не трансформируется нами: MapLibre сам задаёт ему transform. */
+  .marker {
+    width: 30px; height: 30px;
+    cursor: pointer;
+    --c: var(--good);
+  }
+  .marker-dot {
+    position: absolute; inset: 3px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--c);
+    color: #fff;
+    box-shadow: 0 0 0 3px #fff, 0 4px 12px rgba(0,0,0,.3);
+    transition: transform .35s var(--spring), box-shadow .3s var(--ease);
+    will-change: transform;
+  }
+  body.dark .marker-dot { box-shadow: 0 0 0 3px rgba(30,30,34,.95), 0 4px 12px rgba(0,0,0,.5); }
+  .marker:hover .marker-dot, .marker:focus-visible .marker-dot { transform: scale(1.18); }
+  .marker.active .marker-dot { transform: scale(1.28); box-shadow: 0 0 0 3px #fff, 0 0 0 7px color-mix(in srgb, var(--c) 35%, transparent), 0 6px 18px rgba(0,0,0,.35); }
+  .marker-pulse {
+    position: absolute; inset: 3px; border-radius: 50%;
+    background: var(--c); opacity: 0; pointer-events: none;
+  }
+  .marker.active .marker-pulse { animation: pulse 2s var(--ease) infinite; }
+  .marker-label {
+    position: absolute; top: calc(100% + 4px); left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-size: 11.5px; font-weight: 600;
+    padding: 3px 8px; border-radius: 8px;
+    background: var(--glass-bg-strong);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    pointer-events: none;
+    transition: opacity .25s var(--ease);
+  }
+  body.hide-labels .marker-label { opacity: 0; }
+  .marker.small { width: 22px; height: 22px; }
+  .marker.small .marker-dot { inset: 3px; box-shadow: 0 0 0 2px #fff, 0 2px 8px rgba(0,0,0,.3); }
+
+  .user-marker { width: 22px; height: 22px; }
+  .user-marker .u-dot {
+    position: absolute; inset: 4px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 0 3px #fff, 0 2px 8px rgba(0,0,0,.3);
+  }
+  .user-marker .u-halo {
+    position: absolute; inset: -14px; border-radius: 50%;
+    background: rgba(10,132,255,.22); animation: halo 2.4s ease-out infinite;
+  }
+
+  /* ---------- MINI CARD ---------- */
+  #mini-card {
+    position: fixed; left: 20px; bottom: 28px; z-index: 15;
+    width: 370px; max-width: calc(100vw - 40px);
+    padding: 18px;
+    opacity: 0; transform: translateY(24px) scale(.96); pointer-events: none;
+    transform-origin: bottom left;
+    transition: opacity .3s var(--ease), transform .55s var(--ease);
+  }
+  #mini-card.show { opacity: 1; transform: none; pointer-events: auto; }
+  #mini-card.bump { animation: bump .45s var(--ease); }
+  .mini-head { display: flex; align-items: flex-start; gap: 12px; }
+  .mini-icon {
+    width: 42px; height: 42px; border-radius: 13px; flex-shrink: 0;
+    display: grid; place-items: center; color: #fff;
+    background: var(--c, var(--good));
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--c, var(--good)) 40%, transparent), inset 0 1px 0 rgba(255,255,255,.4);
+  }
+  .mini-titles { flex: 1; min-width: 0; }
+  #mini-title { font-size: 19px; font-weight: 680; letter-spacing: -0.025em; line-height: 1.2; }
+  #mini-addr { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+  .close-btn {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    display: grid; place-items: center; background: var(--fill); color: var(--text-2);
+    transition: background .2s, transform .3s var(--spring);
+  }
+  .close-btn:hover { background: var(--fill-2); color: var(--text); }
+  .close-btn:active { transform: scale(.88); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  #mini-buses { margin-top: 14px; }
+  .chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 34px; height: 26px; padding: 0 9px;
+    border-radius: 8px; font-size: 13px; font-weight: 650;
+    background: var(--accent-soft); color: var(--accent);
+    transition: transform .3s var(--spring), background .2s, color .2s;
+  }
+  button.chip:hover { transform: translateY(-1px); }
+  .chip.muted { background: var(--fill); color: var(--text-2); }
+  .chip.active { background: var(--accent); color: #fff; }
+
+  #mini-info {
+    margin-top: 14px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+    border-radius: 14px; overflow: hidden;
+    background: var(--separator);
+  }
+  .info-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 8px 11px; font-size: 12.5px;
+    background: var(--glass-bg-strong);
+  }
+  .info-row span:first-child { color: var(--text-2); }
+  .info-row span:last-child { font-weight: 590; text-align: right; }
+  .info-row.full { grid-column: 1 / -1; }
+  .state-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+  .yes { color: var(--good); }
+  .no { color: var(--text-3); }
+
+  #mini-btn {
+    margin-top: 14px; width: 100%; height: 44px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 15px; font-weight: 600; color: #fff;
+    background: linear-gradient(180deg, #2b95ff, #0a7aff);
+    box-shadow: 0 8px 20px rgba(10,132,255,.35), inset 0 1px 0 rgba(255,255,255,.35);
+    transition: transform .35s var(--spring), box-shadow .25s, filter .2s;
+  }
+  #mini-btn:hover { filter: brightness(1.06); box-shadow: 0 10px 26px rgba(10,132,255,.45), inset 0 1px 0 rgba(255,255,255,.35); }
+  #mini-btn:active { transform: scale(.97); }
+
+  /* ---------- LEGEND ---------- */
+  .legend {
+    position: fixed; right: 16px; bottom: 40px; z-index: 10;
+    padding: 12px 10px 10px; width: 230px;
+    border-radius: 20px;
+    animation: riseIn .8s .15s var(--ease) both;
+  }
+  .legend h4 { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-2); padding: 0 6px 6px; }
+  .legend-item {
+    width: 100%; display: flex; align-items: center; gap: 10px;
+    padding: 7px 6px; border-radius: 10px; font-size: 13px; text-align: left;
+    transition: background .15s, opacity .25s;
+  }
+  .legend-item:hover { background: var(--fill); }
+  .legend-item[aria-pressed="false"] { opacity: .4; }
+  .legend-item .ldot { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 2px #fff, 0 1px 4px rgba(0,0,0,.25); flex-shrink: 0; }
+  .legend-item .count { margin-left: auto; font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .legend .route-key { display: flex; align-items: center; gap: 10px; padding: 7px 6px 2px; font-size: 13px; border-top: 1px solid var(--separator); margin-top: 4px; }
+  .legend .route-key i { width: 14px; height: 0; border-top: 3px dashed var(--accent); }
+
+  /* ---------- STOP PAGE ---------- */
+  #stop-page {
+    position: fixed; inset: 0; z-index: 30;
+    display: grid; place-items: center;
+    padding: 24px;
+    background: rgba(0,0,0,0);
+    pointer-events: none;
+    transition: background .4s var(--ease);
+  }
+  #stop-page.open { background: rgba(0,0,0,.22); pointer-events: auto; }
+  body.dark #stop-page.open { background: rgba(0,0,0,.45); }
+  .sp-panel {
+    width: min(1040px, 100%); max-height: min(860px, calc(100vh - 48px));
+    display: flex; flex-direction: column;
+    border-radius: 32px;
+    opacity: 0; transform: translateY(30px) scale(.95);
+    transition: opacity .3s var(--ease), transform .55s var(--ease);
+    overflow: hidden;
+  }
+  #stop-page.open .sp-panel { opacity: 1; transform: none; }
+  .sp-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px 0 22px; flex-shrink: 0;
+  }
+  .traffic { display: flex; gap: 8px; }
+  .traffic button { width: 13px; height: 13px; border-radius: 50%; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.2); position: relative; }
+  .traffic .t-close { background: #ff5f57; }
+  .traffic .t-min { background: #febc2e; }
+  .traffic .t-max { background: #28c840; }
+  .traffic button::after { content: ""; position: absolute; inset: 0; border-radius: 50%; opacity: 0; transition: opacity .15s; }
+  .traffic:hover .t-close::after { opacity: 1; background: radial-gradient(circle, rgba(0,0,0,.45) 0 1.2px, transparent 1.6px); }
+  .sp-crumbs { font-size: 12.5px; color: var(--text-2); }
+  #stop-page-content { overflow: auto; padding: 18px 26px 26px; overscroll-behavior: contain; }
+  #stop-page-content.fade { animation: contentIn .45s var(--ease); }
+
+  .sp-head { display: flex; align-items: center; gap: 16px; }
+  .sp-icon {
+    width: 58px; height: 58px; border-radius: 18px; flex-shrink: 0;
+    display: grid; place-items: center; color: #fff;
+    background: var(--c);
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--c) 40%, transparent), inset 0 1px 0 rgba(255,255,255,.45);
+  }
+  .sp-head h2 { font-size: 30px; font-weight: 720; letter-spacing: -0.035em; line-height: 1.1; }
+  .sp-head p { font-size: 14px; color: var(--text-2); margin-top: 3px; }
+  .badge {
+    margin-left: auto; flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 99px; font-size: 13px; font-weight: 600;
+    color: var(--c); background: color-mix(in srgb, var(--c) 15%, transparent);
+  }
+  .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+  .sp-desc { margin-top: 16px; font-size: 15px; line-height: 1.5; color: var(--text); }
+
+  .sp-body { margin-top: 22px; display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; align-items: start; }
+  .sp-col { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .card {
+    background: var(--glass-bg-strong);
+    border-radius: var(--radius-l);
+    padding: 16px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 1px 3px rgba(0,0,0,.05);
+  }
+  body.dark .card { box-shadow: 0 1px 0 rgba(255,255,255,.06) inset; }
+  .card h3 { font-size: 15px; font-weight: 650; letter-spacing: -0.015em; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .card h3 small { font-size: 12.5px; font-weight: 500; color: var(--text-2); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .stat { padding: 12px; border-radius: 14px; background: var(--fill); }
+  .stat b { display: block; font-size: 24px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 12px; color: var(--text-2); }
+  .facilities { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+  .facility { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--fill); font-size: 13.5px; }
+  .facility .f-ic { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--glass-bg-strong); flex-shrink: 0; font-size: 15px; }
+  .facility .f-val { margin-left: auto; font-weight: 600; }
+
+  .tabs { display: inline-flex; padding: 3px; border-radius: 11px; background: var(--fill); gap: 2px; flex-wrap: wrap; }
+  .tab { padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text-2); transition: background .25s var(--ease), color .2s, box-shadow .25s; }
+  .tab[aria-selected="true"] { background: var(--glass-bg-strong); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+  body.dark .tab[aria-selected="true"] { background: rgba(255,255,255,.14); }
+
+  .next-card {
+    margin: 12px 0; padding: 12px 14px; border-radius: 14px;
+    display: flex; align-items: center; gap: 12px;
+    background: linear-gradient(135deg, rgba(10,132,255,.16), rgba(10,132,255,.06));
+  }
+  .next-card .n-time { font-size: 26px; font-weight: 720; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--accent); }
+  .next-card .n-sub { font-size: 13px; color: var(--text-2); line-height: 1.35; }
+  .next-card .n-sub b { color: var(--text); font-weight: 600; }
+
+  .times { display: flex; flex-direction: column; gap: 1px; border-radius: 12px; overflow: hidden; background: var(--separator); }
+  .t-row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; background: var(--glass-bg-strong); }
+  .t-hour { width: 28px; font-size: 13px; font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .t-mins { display: flex; flex-wrap: wrap; gap: 4px; }
+  .t-min { min-width: 34px; text-align: center; padding: 3px 6px; border-radius: 7px; font-size: 13px; font-weight: 560; font-variant-numeric: tabular-nums; }
+  .t-min.past { color: var(--text-3); }
+  .t-min.next { background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(10,132,255,.35); }
+  .no-sched { font-size: 13.5px; color: var(--text-2); padding: 10px 0 2px; }
+
+  .route-list { display: flex; flex-direction: column; gap: 6px; }
+  .route-row { display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
+  .route-row .chip { flex-shrink: 0; }
+  .route-row span:last-child { color: var(--text-2); }
+
+  .mini-map { height: 240px; border-radius: 16px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--separator); }
+  .mini-map .maplibregl-canvas { border-radius: 16px; }
+
+  .nearby { display: flex; flex-direction: column; gap: 8px; }
+  .near-btn {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    padding: 11px 12px; border-radius: 14px; text-align: left;
+    background: var(--fill);
+    transition: background .2s, transform .35s var(--spring);
+  }
+  .near-btn:hover { background: var(--fill-2); transform: translateX(3px); }
+  .near-btn:active { transform: scale(.98); }
+  .near-btn .nb-dot { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; color: #fff; background: var(--c); flex-shrink: 0; }
+  .near-btn .nb-name { font-weight: 600; font-size: 14px; }
+  .near-btn .nb-sub { font-size: 12px; color: var(--text-2); }
+  .near-btn .nb-arrow { margin-left: auto; color: var(--text-3); }
+
+  /* ---------- TOAST ---------- */
+  #toast {
+    position: fixed; top: 90px; left: 50%; z-index: 40;
+    padding: 10px 16px; border-radius: 14px; font-size: 13.5px; font-weight: 550;
+    transform: translate(-50%, -10px); opacity: 0; pointer-events: none;
+    transition: opacity .25s var(--ease), transform .4s var(--ease);
+    max-width: calc(100vw - 40px);
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ---------- ANIMATIONS ---------- */
+  @keyframes dropIn { from { opacity: 0; transform: translateY(-16px) scale(.98); } }
+  @keyframes riseIn { from { opacity: 0; transform: translateY(16px); } }
+  @keyframes contentIn { from { opacity: 0; transform: translateY(8px); } }
+  @keyframes bump { 40% { transform: scale(.985); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0% { transform: scale(1); opacity: .45; } 100% { transform: scale(2.6); opacity: 0; } }
+  @keyframes halo { 0% { transform: scale(.4); opacity: .9; } 100% { transform: scale(1.4); opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width: 900px) {
+    .sp-body { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .header { left: 8px; right: 8px; gap: 8px; padding: 0 6px 0 8px; height: 56px; }
+    .logo-text, .kbd { display: none; }
+    .icon-btn { width: 36px; height: 36px; }
+    #mini-card { left: 8px; right: 8px; bottom: 10px; width: auto; max-width: none; }
+    .legend { bottom: auto; top: 80px; right: 8px; width: 200px; padding: 8px; }
+    .legend.collapsed-mobile .legend-item .count, .legend.collapsed-mobile .route-key { display: none; }
+    #stop-page { padding: 0; align-items: end; }
+    .sp-panel { max-height: 92vh; border-radius: 28px 28px 0 0; }
+    #stop-page-content { padding: 14px 16px 24px; }
+    .sp-head h2 { font-size: 24px; }
+    .badge { display: none; }
+    .facilities { grid-template-columns: 1fr; }
+    .popover { position: fixed; top: 78px; right: 8px; }
+  }
 </style>
 </head>
 <body>
 
-<!-- ═══ LOADING ═══ -->
-<div class="loading-overlay" id="loading">
-  <div class="spinner"></div>
-  <div class="loading-text">Загрузка карты...</div>
-</div>
-
-<!-- ═══ HEADER ═══ -->
-<div class="header">
+<!-- HEADER -->
+<header class="header glass" role="banner">
   <div class="logo">
-    <div class="logo-icon">🚌</div>
-    <span>Брест</span>
+    <div class="logo-icon" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 18v2M16 18v2"/><circle cx="8" cy="14.5" r=".6" fill="currentColor"/><circle cx="16" cy="14.5" r=".6" fill="currentColor"/></svg>
+    </div>
+    <div class="logo-text"><b>Остановки Бреста</b><span>Карта остановок</span></div>
   </div>
 
   <div class="search-wrap">
-    <div class="search-icon">🔍</div>
-    <input type="text" class="search-input" id="search" placeholder="Поиск остановки или маршрута">
+    <div class="search-field">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search" type="search" placeholder="Остановка, улица или номер автобуса" autocomplete="off" spellcheck="false"
+             role="combobox" aria-expanded="false" aria-controls="search-results" aria-autocomplete="list" aria-label="Поиск остановок">
+      <span class="kbd" aria-hidden="true">⌘K</span>
+    </div>
+    <ul id="search-results" class="search-results glass" role="listbox" aria-label="Результаты поиска"></ul>
   </div>
 
-  <div class="header-buttons">
-    <button class="btn-icon" id="btn-style" title="Стиль карты">🗺</button>
-    
+  <div class="actions">
+    <button id="btn-style" class="icon-btn" aria-label="Стиль карты" aria-expanded="false" aria-controls="pop-style" title="Стиль карты">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" opacity=".9"/></svg>
+    </button>
+    <button id="btn-layers" class="icon-btn" aria-label="Слои" aria-expanded="false" aria-controls="pop-layers" title="Слои">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg>
+    </button>
+    <button id="btn-locate" class="icon-btn" aria-label="Моё местоположение" title="Моё местоположение">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 3 10.5l7.5 3L14 21z"/></svg>
+    </button>
+
+    <div id="pop-style" class="popover glass" role="menu" aria-label="Стиль карты">
+      <h4>Стиль карты</h4>
+      <div id="style-list"></div>
+    </div>
+    <div id="pop-layers" class="popover glass" role="menu" aria-label="Слои">
+      <h4>Слои</h4>
+      <button class="pop-item" role="menuitemcheckbox" aria-checked="true" data-layer="route">Линия маршрута №9<span class="switch"></span></button>
+      <button class="pop-item" role="menuitemcheckbox" aria-checked="true" data-layer="labels">Подписи остановок<span class="switch"></span></button>
+    </div>
   </div>
-</div>
+</header>
 
-<!-- ═══ MAP ═══ -->
-<div id="map"></div>
+<!-- MAP -->
+<div id="map" role="application" aria-label="Карта остановок Бреста"></div>
 
-<!-- ═══ STOPS PANEL ═══ -->
-<div class="stops-panel" id="stops-panel">
-  <div class="stops-scroll" id="stops-scroll"></div>
-</div>
-
-<!-- ═══ STOP PAGE ═══ -->
-<div class="stop-page" id="stop-page">
-  <button class="back-btn" onclick="closeStopPage()">
-    <span>←</span> Назад
+<!-- MINI CARD -->
+<section id="mini-card" class="glass" aria-live="polite" aria-labelledby="mini-title" aria-hidden="true">
+  <div class="mini-head">
+    <div class="mini-icon" id="mini-icon" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 18v2M16 18v2"/></svg>
+    </div>
+    <div class="mini-titles">
+      <h2 id="mini-title">—</h2>
+      <p id="mini-addr">—</p>
+    </div>
+    <button class="close-btn" id="mini-close" aria-label="Закрыть">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div id="mini-buses" class="chips" aria-label="Автобусы"></div>
+  <div id="mini-info"></div>
+  <button id="mini-btn">
+    Подробнее
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
   </button>
-  <div class="stop-page-content" id="stop-page-content"></div>
+</section>
+
+<!-- LEGEND -->
+<aside class="legend glass" aria-label="Условные обозначения">
+  <h4>Состояние</h4>
+  <div id="legend-items"></div>
+  <div class="route-key"><i aria-hidden="true"></i>Маршрут №9</div>
+</aside>
+
+<!-- STOP PAGE -->
+<div id="stop-page" role="dialog" aria-modal="true" aria-labelledby="sp-title" aria-hidden="true">
+  <div class="sp-panel glass">
+    <div class="sp-toolbar">
+      <div class="traffic">
+        <button class="t-close" id="sp-close" aria-label="Закрыть страницу остановки"></button>
+        <button class="t-min" tabindex="-1" aria-hidden="true"></button>
+        <button class="t-max" tabindex="-1" aria-hidden="true"></button>
+      </div>
+      <span class="sp-crumbs" id="sp-crumbs">Остановки</span>
+      <button class="close-btn" id="sp-close-2" aria-label="Закрыть">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div id="stop-page-content"></div>
+  </div>
 </div>
 
-<!-- QR убран -->
-</div>
+<div id="toast" class="glass" role="status" aria-live="polite"></div>
 
 <script>
-/* ═══════════════════════════════════════════════════════════════
-   🔑 MAPTILER KEY
-   ═══════════════════════════════════════════════════════════════ */
-const MAPTILER_KEY = 'jglHccatCYM4tRmZ1J1w';
+(() => {
+  'use strict';
 
-/* Стили карты */
-const MAP_STYLES = {
-  streets: `https://api.maptiler.com/maps/streets-v2-dark/style.json?key=${MAPTILER_KEY}`,
-  satellite: `https://api.maptiler.com/maps/hybrid/style.json?key=${MAPTILER_KEY}`,
-  basic: `https://api.maptiler.com/maps/basic-v2-dark/style.json?key=${MAPTILER_KEY}`
-};
+  // ================= DATA =================
+  const STOPS = [
+    { "id": "rechickaya", "name": "Речицкая", "address": "ул. Речицкая", "coords": [23.650751, 52.10737], "built": "1978", "state": "good", "surface": "asphalt", "has_square": false, "has_shop": false, "bins": 3, "benches": 4, "trees": 2, "trainers": false, "buses": ["5","9","9а","9Д","44","44а","50","52а","54","57а"], "schedule": { "9": ["05:32","06:05","06:36","07:09","07:38","08:12","08:54","09:55","10:55","11:50","12:55","14:02","14:58","16:02","17:00","18:00","18:50","20:00","21:30","22:40","23:45"], "44": ["05:55","06:21","06:52","07:27","08:10","16:35","17:04","17:38","18:17"], "50": ["06:00","06:30","07:00","07:30","08:00","08:30","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00"] }, "description": "Центральная остановка микрорайона Речица.", "nearby": ["hlebprom", "shkola"] },
+    { "id": "hlebprom", "name": "Хлебпром", "address": "ул. Речицкая", "coords": [23.643882, 52.106538], "built": "1982", "state": "good", "surface": "asphalt", "has_square": false, "has_shop": false, "bins": 2, "benches": 3, "trees": 1, "trainers": false, "buses": ["9","9а","44","44а","50"], "schedule": { "9": ["05:34","06:07","06:38","07:11","07:40","08:14","08:56","09:57","10:57","11:52","12:57","14:04","15:00","16:04","17:02","18:02","18:52","20:02","21:32","22:42","23:47"], "44": ["05:57","06:23","06:54","07:29","08:12","16:37","17:06","17:40","18:19"], "50": ["06:02","06:32","07:02","07:32","08:02","08:32","09:02","10:02","11:02","12:02","13:02","14:02","15:02","16:02","17:02","18:02","19:02","20:02","21:02"] }, "description": "Остановка у предприятия «Хлебпром».", "nearby": ["rechickaya", "shkola"] },
+    { "id": "shkola", "name": "Школа", "address": "ул. Речицкая", "coords": [23.647433, 52.103296], "built": "1985", "state": "satisfactory", "surface": "tile", "has_square": true, "has_shop": false, "bins": 3, "benches": 5, "trees": 4, "trainers": true, "buses": ["9","9а","44","44а","50"], "schedule": { "9": ["05:36","06:09","06:40","07:13","07:42","08:16","08:58","09:59","10:59","11:54","12:59","14:06","15:02","16:06","17:04","18:04","18:54","20:04","21:34","22:44","23:49"], "44": ["05:59","06:25","06:56","07:31","08:14","16:39","17:08","17:42","18:21"], "50": ["06:04","06:34","07:04","07:34","08:04","08:34","09:04","10:04","11:04","12:04","13:04","14:04","15:04","16:04","17:04","18:04","19:04","20:04","21:04"] }, "description": "Остановка рядом со школой.", "nearby": ["hlebprom", "agrotrans"] },
+    { "id": "agrotrans", "name": "Агротранс", "address": "ул. Речицкая", "coords": [23.649697, 52.098582], "built": "1990", "state": "good", "surface": "asphalt", "has_square": false, "has_shop": true, "bins": 2, "benches": 2, "trees": 1, "trainers": false, "buses": ["5","9","9а","44","44а","50","54"], "schedule": { "9": ["05:37","06:10","06:41","07:14","07:43","08:17","08:59","10:00","11:00","11:55","13:00","14:07","15:03","16:07","17:05","18:05","18:55","20:05","21:35","22:45","23:50"], "44": ["06:00","06:26","06:57","07:32","08:15","16:40","17:09","17:43","18:22"], "50": ["06:05","06:35","07:05","07:35","08:05","08:35","09:05","10:05","11:05","12:05","13:05","14:05","15:05","16:05","17:05","18:05","19:05","20:05","21:05"] }, "description": "Остановка у предприятия «Агротранс».", "nearby": ["shkola", "rybtorg"] },
+    { "id": "rybtorg", "name": "База «Рыбторг»", "address": "ул. Речицкая", "coords": [23.650102, 52.094773], "built": "1988", "state": "bad", "surface": "grass", "has_square": false, "has_shop": false, "bins": 0, "benches": 1, "trees": 0, "trainers": false, "buses": ["9","9а","44","44а"], "schedule": { "9": ["05:39","06:12","06:43","07:16","07:45","08:19","09:01","10:02","11:02","11:57","13:02","14:09","15:05","16:09","17:07","18:07","18:57","20:07","21:37","22:47","23:52"], "44": ["06:02","06:28","06:59","07:34","08:17","16:42","17:11","17:45","18:24"] }, "description": "Остановка у базы «Рыбторг».", "nearby": ["agrotrans", "myasokombinat"] },
+    { "id": "myasokombinat", "name": "Мясокомбинат", "address": "ул. Писателя Смирнова", "coords": [23.644367, 52.094866], "built": "1975", "state": "good", "surface": "tile", "has_square": true, "has_shop": true, "bins": 4, "benches": 5, "trees": 6, "trainers": true, "buses": ["9","9а","9Д","44","44а","50"], "schedule": { "9": ["05:43","06:16","06:47","07:20","07:49","08:23","09:05","10:06","11:06","12:01","13:06","14:13","15:09","16:13","17:11","18:11","19:01","20:11","21:41","22:51","23:56"], "44": ["05:55","06:21","06:52","07:27","08:10","16:35","17:04","17:38","18:17"], "50": ["06:00","06:30","07:00","07:30","08:00","08:30","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00"] }, "description": "Конечная маршрута №9.", "nearby": ["rybtorg", "rechickaya"] }
+  ];
 
-/* ═══════════════════════════════════════════════════════════════
-   📊 ДАННЫЕ ОСТАНОВОК
-   ═══════════════════════════════════════════════════════════════ */
-const STOPS = [
-  {
-    id: "rechickaya",
-    name: "Речицкая",
-    address: "ул. Речицкая",
-    coords: [23.650751, 52.10737],
-    built: "1978",
-    buses: ["5", "9", "9а", "9Д", "44", "44а", "50", "52а", "54", "57а"],
-    schedule: {
-      "9": ["05:32","06:05","06:36","07:09","07:38","08:12","08:54","09:55","10:55","11:50","12:55","14:02","14:58","16:02","17:00","18:00","18:50","20:00","21:30","22:40","23:45"],
-      "44": ["05:55","06:21","06:52","07:27","08:10","16:35","17:04","17:38","18:17"],
-      "50": ["06:00","06:30","07:00","07:30","08:00","08:30","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00"]
+  // ================= DICTIONARIES =================
+  const STATE = {
+    good:         { label: 'Хорошее',            color: '#34c759' },
+    satisfactory: { label: 'Удовлетворительное', color: '#ff9f0a' },
+    bad:          { label: 'Требует внимания',   color: '#ff3b30' }
+  };
+  const SURFACE = { asphalt: 'Асфальт', tile: 'Плитка', grass: 'Грунт' };
+
+  const SATELLITE_STYLE = {
+    version: 8,
+    sources: {
+      sat: {
+        type: 'raster',
+        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+        tileSize: 256,
+        maxzoom: 19,
+        attribution: 'Imagery © Esri'
+      }
     },
-    description: "Центральная остановка микрорайона Речица. Связывает микрорайон с центром Бреста.",
-    nearby: ["hlebprom", "shkola"]
-  },
-  {
-    id: "hlebprom",
-    name: "Хлебпром",
-    address: "ул. Речицкая",
-    coords: [23.643882, 52.106538],
-    built: "1982",
-    buses: ["9", "9а", "44", "44а", "50"],
-    schedule: {
-      "9": ["05:34","06:07","06:38","07:11","07:40","08:14","08:56","09:57","10:57","11:52","12:57","14:04","15:00","16:04","17:02","18:02","18:52","20:02","21:32","22:42","23:47"],
-      "44": ["05:57","06:23","06:54","07:29","08:12","16:37","17:06","17:40","18:19"],
-      "50": ["06:02","06:32","07:02","07:32","08:02","08:32","09:02","10:02","11:02","12:02","13:02","14:02","15:02","16:02","17:02","18:02","19:02","20:02","21:02"]
-    },
-    description: "Остановка у предприятия «Хлебпром». Рядом — хлебозавод.",
-    nearby: ["rechickaya", "shkola"]
-  },
-  {
-    id: "shkola",
-    name: "Школа",
-    address: "ул. Речицкая",
-    coords: [23.647433, 52.103296],
-    built: "1985",
-    buses: ["9", "9а", "44", "44а", "50"],
-    schedule: {
-      "9": ["05:36","06:09","06:40","07:13","07:42","08:16","08:58","09:59","10:59","11:54","12:59","14:06","15:02","16:06","17:04","18:04","18:54","20:04","21:34","22:44","23:49"],
-      "44": ["05:59","06:25","06:56","07:31","08:14","16:39","17:08","17:42","18:21"],
-      "50": ["06:04","06:34","07:04","07:34","08:04","08:34","09:04","10:04","11:04","12:04","13:04","14:04","15:04","16:04","17:04","18:04","19:04","20:04","21:04"]
-    },
-    description: "Остановка рядом со школой в микрорайоне Речица.",
-    nearby: ["hlebprom", "agrotrans"]
-  },
-  {
-    id: "agrotrans",
-    name: "Агротранс",
-    address: "ул. Речицкая",
-    coords: [23.649697, 52.098582],
-    built: "1990",
-    buses: ["5", "9", "9а", "44", "44а", "50", "54"],
-    schedule: {
-      "9": ["05:37","06:10","06:41","07:14","07:43","08:17","08:59","10:00","11:00","11:55","13:00","14:07","15:03","16:07","17:05","18:05","18:55","20:05","21:35","22:45","23:50"],
-      "44": ["06:00","06:26","06:57","07:32","08:15","16:40","17:09","17:43","18:22"],
-      "50": ["06:05","06:35","07:05","07:35","08:05","08:35","09:05","10:05","11:05","12:05","13:05","14:05","15:05","16:05","17:05","18:05","19:05","20:05","21:05"]
-    },
-    description: "Остановка у предприятия «Агротранс». Здесь останавливается автобус №5 (в крепость).",
-    nearby: ["shkola", "rybtorg"]
-  },
-  {
-    id: "rybtorg",
-    name: "База «Рыбторг»",
-    address: "ул. Речицкая",
-    coords: [23.650102, 52.094773],
-    built: "1988",
-    buses: ["9", "9а", "44", "44а"],
-    schedule: {
-      "9": ["05:39","06:12","06:43","07:16","07:45","08:19","09:01","10:02","11:02","11:57","13:02","14:09","15:05","16:09","17:07","18:07","18:57","20:07","21:37","22:47","23:52"],
-      "44": ["06:02","06:28","06:59","07:34","08:17","16:42","17:11","17:45","18:24"]
-    },
-    description: "Остановка у базы «Рыбторг» — предприятия оптовой торговли рыбой.",
-    nearby: ["agrotrans", "myasokombinat"]
-  },
-  {
-    id: "myasokombinat",
-    name: "Мясокомбинат",
-    address: "ул. Писателя Смирнова",
-    coords: [23.644367, 52.094866],
-    built: "1975",
-    buses: ["9", "9а", "9Д", "44", "44а", "50"],
-    schedule: {
-      "9": ["05:43","06:16","06:47","07:20","07:49","08:23","09:05","10:06","11:06","12:01","13:06","14:13","15:09","16:13","17:11","18:11","19:01","20:11","21:41","22:51","23:56"],
-      "44": ["05:55","06:21","06:52","07:27","08:10","16:35","17:04","17:38","18:17"],
-      "50": ["06:00","06:30","07:00","07:30","08:00","08:30","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00"]
-    },
-    description: "Конечная маршрута №9. Рядом — ОАО «Брестский мясокомбинат».",
-    nearby: ["rybtorg", "rechickaya"]
+    layers: [{ id: 'sat', type: 'raster', source: 'sat' }]
+  };
+
+  const STYLES = [
+    { id: 'light',  name: 'Светлая',  dark: false, swatch: 'linear-gradient(135deg,#f6f6f4,#dfe3e8)', style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json' },
+    { id: 'voyager',name: 'Улицы',    dark: false, swatch: 'linear-gradient(135deg,#f5efe3,#a7d3e8 60%,#f2c46d)', style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json' },
+    { id: 'dark',   name: 'Тёмная',   dark: true,  swatch: 'linear-gradient(135deg,#2b2d31,#0e0f12)', style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json' },
+    { id: 'sat',    name: 'Спутник',  dark: true,  swatch: 'linear-gradient(135deg,#3d5a3a,#1f3b4d 60%,#7a6b4e)', style: SATELLITE_STYLE }
+  ];
+
+  const ICON_BUS = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 18v2M16 18v2"/></svg>';
+  const ICON_BUS_L = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 18v2M16 18v2"/></svg>';
+  const ICON_CHEVRON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  const ICON_CHECK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg>';
+
+  // ================= HELPERS =================
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const byId = Object.fromEntries(STOPS.map(s => [s.id, s]));
+  const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  const nowMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+  const pad = n => String(n).padStart(2, '0');
+  const yesNo = v => v ? '<span class="yes">Есть</span>' : '<span class="no">Нет</span>';
+
+  function haversine([lng1, lat1], [lng2, lat2]) {
+    const R = 6371000, rad = Math.PI / 180;
+    const dLat = (lat2 - lat1) * rad, dLng = (lng2 - lng1) * rad;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(a));
   }
-];
+  const fmtDist = m => m < 1000 ? `${Math.round(m / 10) * 10} м` : `${(m / 1000).toFixed(1).replace('.', ',')} км`;
+  const fmtWait = mins => {
+    if (mins <= 0) return 'сейчас';
+    if (mins < 60) return `через ${mins} мин`;
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return `через ${h} ч${m ? ` ${m} мин` : ''}`;
+  };
+  const cloneStyle = s => typeof s === 'string' ? s : JSON.parse(JSON.stringify(s));
 
-/* ═══════════════════════════════════════════════════════════════
-   🗺 MAP
-   ═══════════════════════════════════════════════════════════════ */
-let map;
-let markers = {};
-let currentStyle = 'streets';
-let miniMap = null;
+  let toastTimer;
+  function toast(msg) {
+    const el = $('#toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+  }
 
-function initMap() {
-  map = new maplibregl.Map({
+  // ================= STATE =================
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  let currentStyle = prefersDark ? STYLES[2] : STYLES[0];
+  let currentId = null;
+  let pageStopId = null;
+  let pageRoute = null;
+  let miniMap = null;
+  let userMarker = null;
+  const layerState = { route: true, labels: true };
+  const visibleStates = new Set(Object.keys(STATE));
+
+  document.body.classList.toggle('dark', currentStyle.dark);
+
+  // ================= MAP =================
+  const bounds = STOPS.reduce((b, s) => b.extend(s.coords), new maplibregl.LngLatBounds(STOPS[0].coords, STOPS[0].coords));
+
+  const map = new maplibregl.Map({
     container: 'map',
-    style: MAP_STYLES[currentStyle],
-    center: [23.648000, 52.102000],
-    zoom: 14,
-    pitch: 50,
-    bearing: -15,
-    attributionControl: true,
-    antialias: true
+    style: cloneStyle(currentStyle.style),
+    bounds,
+    fitBoundsOptions: { padding: { top: 120, bottom: 120, left: 80, right: 80 } },
+    attributionControl: false,
+    maxPitch: 60
   });
+  map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
 
-  map.on('load', () => {
-    document.getElementById('loading').classList.add('hidden');
-    addMarkers();
-  });
+  function addRouteLayer() {
+    if (map.getSource('route')) return;
+    const isDark = currentStyle.dark;
+    map.addSource('route', {
+      type: 'geojson',
+      data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: STOPS.map(s => s.coords) } }
+    });
+    const visibility = layerState.route ? 'visible' : 'none';
+    map.addLayer({
+      id: 'route-casing', type: 'line', source: 'route',
+      layout: { 'line-join': 'round', 'line-cap': 'round', visibility },
+      paint: { 'line-color': isDark ? '#000' : '#fff', 'line-width': 8, 'line-opacity': isDark ? 0.45 : 0.85 }
+    });
+    map.addLayer({
+      id: 'route-line', type: 'line', source: 'route',
+      layout: { 'line-join': 'round', 'line-cap': 'round', visibility },
+      paint: { 'line-color': '#0a84ff', 'line-width': 4, 'line-dasharray': [1.6, 1.4] }
+    });
+  }
+  map.on('style.load', addRouteLayer);
+  map.on('error', e => console.warn('Map error:', e && e.error ? e.error.message : e));
 
-  map.on('error', (e) => {
-    console.error('Map error:', e);
-    document.getElementById('loading').classList.add('hidden');
-  });
-}
-
-function addMarkers() {
+  // ================= MARKERS =================
+  const markers = {};
   STOPS.forEach(stop => {
     const el = document.createElement('div');
-    el.style.cssText = `
-      width: 28px;
-      height: 28px;
-      background: linear-gradient(135deg, #0a84ff 0%, #0064d1 100%);
-      border: 3px solid #ffffff;
-      border-radius: 50%;
-      cursor: pointer;
-      box-shadow: 0 4px 16px rgba(10, 132, 255, 0.6), 0 0 0 4px rgba(10, 132, 255, 0.15);
-      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
-    `;
-
-    el.addEventListener('mouseenter', () => {
-      el.style.transform = 'scale(1.3)';
-      el.style.boxShadow = '0 6px 24px rgba(10, 132, 255, 0.8), 0 0 0 8px rgba(10, 132, 255, 0.2)';
+    el.className = 'marker';
+    el.dataset.id = stop.id;
+    el.dataset.state = stop.state;
+    el.tabIndex = 0;
+    el.setAttribute('role', 'button');
+    el.setAttribute('aria-label', `Остановка ${stop.name}, состояние: ${STATE[stop.state].label}`);
+    el.style.setProperty('--c', STATE[stop.state].color);
+    el.innerHTML = `<span class="marker-pulse"></span><span class="marker-dot">${ICON_BUS}</span><span class="marker-label">${esc(stop.name)}</span>`;
+    el.addEventListener('click', e => { e.stopPropagation(); selectStop(stop.id); });
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectStop(stop.id); }
     });
-    el.addEventListener('mouseleave', () => {
-      el.style.transform = 'scale(1)';
-      el.style.boxShadow = '0 4px 16px rgba(10, 132, 255, 0.6), 0 0 0 4px rgba(10, 132, 255, 0.15)';
-    });
-
-    const popup = new maplibregl.Popup({ offset: 20, closeButton: true, maxWidth: '280px' })
-      .setHTML(`
-        <div class="popup-title">${stop.name}</div>
-        <div class="popup-addr">📍 ${stop.address}</div>
-        <div class="popup-buses">
-          ${stop.buses.slice(0, 6).map(b => `<span class="bus-chip">${b}</span>`).join('')}
-          ${stop.buses.length > 6 ? `<span class="bus-chip">+${stop.buses.length - 6}</span>` : ''}
-        </div>
-        <button class="popup-btn" onclick="openStopPage('${stop.id}')">Подробнее</button>
-      `);
-
-    markers[stop.id] = new maplibregl.Marker({ element: el })
+    markers[stop.id] = new maplibregl.Marker({ element: el, anchor: 'center' })
       .setLngLat(stop.coords)
-      .setPopup(popup)
       .addTo(map);
   });
-}
 
-/* ═══════════════════════════════════════════════════════════════
-   🎨 ПЕРЕКЛЮЧАТЕЛЬ СТИЛЯ КАРТЫ
-   ═══════════════════════════════════════════════════════════════ */
-document.getElementById('btn-style').addEventListener('click', () => {
-  const order = ['streets', 'satellite', 'basic'];
-  const idx = order.indexOf(currentStyle);
-  currentStyle = order[(idx + 1) % order.length];
-
-  map.setStyle(MAP_STYLES[currentStyle]);
-
-  map.once('styledata', () => {
-    // Пересоздаём маркеры (они удаляются при смене стиля)
-    Object.values(markers).forEach(m => m.remove());
-    markers = {};
-    addMarkers();
+  map.on('click', e => {
+    const t = e.originalEvent && e.originalEvent.target;
+    if (t && t.closest && t.closest('.marker')) return;
+    hideMini();
   });
 
-  // Меняем иконку
-  const btn = document.getElementById('btn-style');
-  const icons = { streets: '🗺', satellite: '🛰', basic: '🎨' };
-  btn.textContent = icons[currentStyle];
-});
+  // ================= MINI CARD =================
+  const miniCard = $('#mini-card');
 
-/* ═══════════════════════════════════════════════════════════════
-   📋 СПИСОК ОСТАНОВОК
-   ═══════════════════════════════════════════════════════════════ */
-function renderStopsList(filter = '') {
-  const q = filter.toLowerCase().trim();
-  const list = q
-    ? STOPS.filter(s =>
-        s.name.toLowerCase().includes(q) ||
-        s.buses.some(b => b.toLowerCase().includes(q))
-      )
-    : STOPS;
+  function selectStop(id, { fly = true } = {}) {
+    const stop = byId[id];
+    if (!stop) return;
+    const wasShown = miniCard.classList.contains('show');
+    currentId = id;
 
-  document.getElementById('stops-scroll').innerHTML = list.map(stop => `
-    <div class="stop-card" onclick="openStopPage('${stop.id}')">
-      <div class="stop-name">${stop.name}</div>
-      <div class="stop-address">📍 ${stop.address}</div>
-      <div class="stop-buses">
-        ${stop.buses.slice(0, 5).map(b => `<span class="bus-chip">${b}</span>`).join('')}
-        ${stop.buses.length > 5 ? `<span class="bus-chip">+${stop.buses.length - 5}</span>` : ''}
-      </div>
-    </div>
-  `).join('');
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   📄 СТРАНИЦА ОСТАНОВКИ
-   ═══════════════════════════════════════════════════════════════ */
-function openStopPage(stopId) {
-  const stop = STOPS.find(s => s.id === stopId);
-  if (!stop) return;
-
-  document.getElementById('stops-panel').classList.add('hidden');
-
-  const container = document.getElementById('stop-page-content');
-  const next = getNextBus(stop);
-  const now = new Date();
-  const nowTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-  const scheduleHTML = Object.entries(stop.schedule).map(([bus, times]) => {
-    const timesHTML = times.map(t => {
-      const isPast = t < nowTime;
-      const isNext = !isPast && times.filter(x => x >= nowTime)[0] === t;
-      const cls = isPast ? 'past' : (isNext ? 'next' : '');
-      return `<span class="time-chip ${cls}">${t}</span>`;
-    }).join('');
-    return `
-      <div class="schedule-row">
-        <div class="schedule-bus">${bus}</div>
-        <div class="schedule-times">${timesHTML}</div>
-      </div>
-    `;
-  }).join('');
-
-  const nearbyHTML = stop.nearby.map(id => {
-    const n = STOPS.find(s => s.id === id);
-    return n ? `<button class="nearby-btn" onclick="openStopPage('${n.id}')">${n.name} →</button>` : '';
-  }).join('');
-
-  container.innerHTML = `
-    <div class="hero">
-      <h1 class="hero-title">${stop.name}</h1>
-      <div class="hero-address">📍 ${stop.address}</div>
-      <div class="hero-badge">с ${stop.built} года</div>
-    </div>
-
-    ${next ? `
-      <div class="next-bus">
-        <div class="next-label">Следующий автобус</div>
-        <div class="next-row">
-          <div class="next-number">${next.bus}</div>
-          <div class="next-time">в ${next.time}</div>
-          <div class="next-in">через ${next.inMinutes} мин</div>
-        </div>
-      </div>
-    ` : ''}
-
-    <div class="section">
-      <div class="section-title">Маршруты</div>
-      <div class="buses-grid">
-        ${stop.buses.map(b => `<div class="bus-item">${b}</div>`).join('')}
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Описание</div>
-      <div class="description">${stop.description}</div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Расписание</div>
-      <div class="schedule-list">${scheduleHTML}</div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Рядом</div>
-      <div class="nearby-list">${nearbyHTML}</div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">На карте</div>
-      <div id="mini-map"></div>
-    </div>
-  `;
-
-  document.getElementById('stop-page').classList.add('active');
-  document.title = stop.name + ' — Остановки Бреста';
-  document.querySelector('.stop-page').scrollTop = 0;
-
-  if (miniMap) { miniMap.remove(); miniMap = null; }
-
-  setTimeout(() => {
-    miniMap = new maplibregl.Map({
-      container: 'mini-map',
-      style: MAP_STYLES[currentStyle],
-      center: stop.coords, zoom: 16,
-      pitch: 50,
-      bearing: -15
+    Object.entries(markers).forEach(([mid, m]) => {
+      const el = m.getElement();
+      const active = mid === id;
+      el.classList.toggle('active', active);
+      el.style.zIndex = active ? '5' : '';
     });
 
-    const el = document.createElement('div');
-    el.style.cssText = `
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, #0a84ff 0%, #0064d1 100%);
-      border: 4px solid #ffffff;
-      border-radius: 50%;
-      box-shadow: 0 6px 24px rgba(10, 132, 255, 0.7), 0 0 0 6px rgba(10, 132, 255, 0.2);
-    `;
+    fillMini(stop);
+    miniCard.classList.add('show');
+    miniCard.setAttribute('aria-hidden', 'false');
+    if (wasShown) {
+      miniCard.classList.remove('bump');
+      void miniCard.offsetWidth;
+      miniCard.classList.add('bump');
+    }
 
-    new maplibregl.Marker({ element: el })
-      .setLngLat(stop.coords)
-      .addTo(miniMap);
-  }, 100);
-
-  location.hash = 'stop=' + stop.id;
-}
-
-function closeStopPage() {
-  document.getElementById('stop-page').classList.remove('active');
-  document.getElementById('stops-panel').classList.remove('hidden');
-  document.title = 'Остановки Бреста';
-  location.hash = '';
-  if (miniMap) { miniMap.remove(); miniMap = null; }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   ⏱ БЛИЖАЙШИЙ АВТОБУС
-   ═══════════════════════════════════════════════════════════════ */
-function getNextBus(stop) {
-  const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  let best = null;
-
-  for (const [bus, times] of Object.entries(stop.schedule)) {
-    for (const time of times) {
-      const [h, m] = time.split(':').map(Number);
-      const min = h * 60 + m;
-      if (min >= nowMin && (!best || min < best.minutes)) {
-        best = { bus, time, minutes: min, inMinutes: min - nowMin };
-      }
+    if (fly) {
+      const wide = window.innerWidth > 720;
+      map.flyTo({
+        center: stop.coords,
+        zoom: Math.max(map.getZoom(), 15.6),
+        offset: wide ? [190, 0] : [0, -140],
+        duration: 900,
+        essential: true
+      });
     }
   }
-  return best;
-}
 
-/* ═══════════════════════════════════════════════════════════════
-   📱 QR-КОДЫ
-   ═══════════════════════════════════════════════════════════════ */
-let qrBuilt = false;
-
-
-
-
-
-
-/* ═══════════════════════════════════════════════════════════════
-   🔍 ПОИСК
-   ═══════════════════════════════════════════════════════════════ */
-document.getElementById('search').addEventListener('input', (e) => {
-  const q = e.target.value;
-  renderStopsList(q);
-
-  const filtered = q
-    ? STOPS.filter(s =>
-        s.name.toLowerCase().includes(q.toLowerCase()) ||
-        s.buses.some(b => b.toLowerCase().includes(q.toLowerCase()))
-      )
-    : STOPS;
-
-  if (filtered.length === 1 && map) {
-    map.flyTo({ center: filtered[0].coords, zoom: 16, duration: 1200, essential: true });
+  function fillMini(stop) {
+    const st = STATE[stop.state];
+    $('#mini-icon').style.setProperty('--c', st.color);
+    $('#mini-title').textContent = stop.name;
+    $('#mini-addr').textContent = `${stop.address} · ${stop.built} г.`;
+    $('#mini-buses').innerHTML = stop.buses
+      .map(b => `<span class="chip${stop.schedule[b] ? '' : ' muted'}">${esc(b)}</span>`).join('');
+    $('#mini-info').innerHTML = `
+      <div class="info-row full"><span>Состояние</span><span><i class="state-dot" style="background:${st.color}"></i>${st.label}</span></div>
+      <div class="info-row"><span>Покрытие</span><span>${SURFACE[stop.surface] || esc(stop.surface)}</span></div>
+      <div class="info-row"><span>Сквер</span><span>${yesNo(stop.has_square)}</span></div>
+      <div class="info-row"><span>Магазин</span><span>${yesNo(stop.has_shop)}</span></div>
+      <div class="info-row"><span>Тренажёры</span><span>${yesNo(stop.trainers)}</span></div>
+      <div class="info-row"><span>Урны</span><span>${stop.bins}</span></div>
+      <div class="info-row"><span>Лавочки</span><span>${stop.benches}</span></div>
+      <div class="info-row full"><span>Деревья</span><span>${stop.trees}</span></div>`;
   }
-});
 
-/* ═══════════════════════════════════════════════════════════════
-   🔗 HASH ROUTING
-   ═══════════════════════════════════════════════════════════════ */
-function handleHash() {
-  const hash = location.hash;
-  if (hash.startsWith('#stop=')) {
-    openStopPage(hash.slice(6));
-  } else if (hash === '#qr') {
-    openQRPage();
-  } else {
-    closeStopPage();
-    closeQRPage();
+  function hideMini() {
+    miniCard.classList.remove('show');
+    miniCard.setAttribute('aria-hidden', 'true');
+    Object.values(markers).forEach(m => { m.getElement().classList.remove('active'); m.getElement().style.zIndex = ''; });
+    currentId = null;
   }
-}
 
-window.addEventListener('hashchange', handleHash);
+  $('#mini-close').addEventListener('click', hideMini);
+  $('#mini-btn').addEventListener('click', () => { if (currentId) openStopPage(currentId); });
 
-/* ═══════════════════════════════════════════════════════════════
-   🚀 START
-   ═══════════════════════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-  initMap();
-  renderStopsList();
-  handleHash();
-});
+  // ================= STOP PAGE =================
+  const stopPage = $('#stop-page');
+  const pageContent = $('#stop-page-content');
+
+  function openStopPage(id) {
+    const stop = byId[id];
+    if (!stop) return;
+    pageStopId = id;
+    pageRoute = Object.keys(stop.schedule)[0] || null;
+    renderPage(stop);
+    stopPage.classList.add('open');
+    stopPage.setAttribute('aria-hidden', 'false');
+    closePopovers();
+    setTimeout(() => $('#sp-close-2').focus({ preventScroll: true }), 50);
+  }
+
+  function closeStopPage() {
+    stopPage.classList.remove('open');
+    stopPage.setAttribute('aria-hidden', 'true');
+    pageStopId = null;
+    setTimeout(() => {
+      if (!pageStopId && miniMap) { miniMap.remove(); miniMap = null; }
+    }, 450);
+    $('#mini-btn').focus({ preventScroll: true });
+  }
+
+  function renderPage(stop) {
+    const st = STATE[stop.state];
+    $('#sp-crumbs').textContent = `Остановки › ${stop.name}`;
+
+    const routesHtml = stop.buses.map(b => {
+      const has = !!stop.schedule[b];
+      const count = has ? stop.schedule[b].length : 0;
+      return `<div class="route-row">
+        <button class="chip${has ? '' : ' muted'}" data-route="${esc(b)}" ${has ? '' : 'disabled'} aria-label="Маршрут ${esc(b)}">${esc(b)}</button>
+        <span>${has ? `${count} рейс${count % 10 === 1 && count !== 11 ? '' : (count % 10 >= 2 && count % 10 <= 4 && (count < 12 || count > 14) ? 'а' : 'ов')} в день · ${stop.schedule[b][0]}–${stop.schedule[b][count - 1]}` : 'Расписание недоступно'}</span>
+      </div>`;
+    }).join('');
+
+    const tabs = Object.keys(stop.schedule).map(r =>
+      `<button class="tab" role="tab" data-tab="${esc(r)}" aria-selected="${r === pageRoute}">№${esc(r)}</button>`
+    ).join('');
+
+    const nearbyHtml = stop.nearby.map(nid => {
+      const n = byId[nid];
+      if (!n) return '';
+      const d = haversine(stop.coords, n.coords);
+      return `<button class="near-btn" data-near="${esc(n.id)}" style="--c:${STATE[n.state].color}">
+        <span class="nb-dot">${ICON_BUS}</span>
+        <span><span class="nb-name">${esc(n.name)}</span><br><span class="nb-sub">${fmtDist(d)} · ${STATE[n.state].label}</span></span>
+        <span class="nb-arrow">${ICON_CHEVRON}</span>
+      </button>`;
+    }).join('');
+
+    pageContent.innerHTML = `
+      <header class="sp-head">
+        <div class="sp-icon" style="--c:${st.color}">${ICON_BUS_L}</div>
+        <div>
+          <h2 id="sp-title">${esc(stop.name)}</h2>
+          <p>${esc(stop.address)} · Построена в ${esc(stop.built)} г.</p>
+        </div>
+        <span class="badge" style="--c:${st.color}">${st.label}</span>
+      </header>
+      <p class="sp-desc">${esc(stop.description)}</p>
+
+      <div class="sp-body">
+        <div class="sp-col">
+          <section class="card">
+            <h3>Благоустройство</h3>
+            <div class="stats">
+              <div class="stat"><b>${stop.benches}</b><span>Лавочки</span></div>
+              <div class="stat"><b>${stop.bins}</b><span>Урны</span></div>
+              <div class="stat"><b>${stop.trees}</b><span>Деревья</span></div>
+              <div class="stat"><b>${stop.buses.length}</b><span>Маршруты</span></div>
+            </div>
+            <div class="facilities">
+              <div class="facility"><span class="f-ic" aria-hidden="true">🛣️</span>Покрытие<span class="f-val">${SURFACE[stop.surface] || esc(stop.surface)}</span></div>
+              <div class="facility"><span class="f-ic" aria-hidden="true">🌳</span>Сквер<span class="f-val">${yesNo(stop.has_square)}</span></div>
+              <div class="facility"><span class="f-ic" aria-hidden="true">🛒</span>Магазин<span class="f-val">${yesNo(stop.has_shop)}</span></div>
+              <div class="facility"><span class="f-ic" aria-hidden="true">🏋️</span>Тренажёры<span class="f-val">${yesNo(stop.trainers)}</span></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <h3>Расписание <small id="sched-now"></small></h3>
+            ${tabs ? `<div class="tabs" role="tablist" aria-label="Маршрут">${tabs}</div>
+              <div id="sched-next" class="next-card"></div>
+              <div id="sched-grid" class="times" role="tabpanel"></div>`
+              : `<p class="no-sched">Расписание для этой остановки недоступно.</p>`}
+          </section>
+        </div>
+
+        <div class="sp-col">
+          <section class="card">
+            <h3>На карте <small>${stop.coords[1].toFixed(5)}, ${stop.coords[0].toFixed(5)}</small></h3>
+            <div id="mini-map" class="mini-map" aria-label="Мини-карта остановки ${esc(stop.name)}"></div>
+          </section>
+          <section class="card">
+            <h3>Маршруты</h3>
+            <div class="route-list">${routesHtml}</div>
+          </section>
+          <section class="card">
+            <h3>Рядом</h3>
+            <div class="nearby">${nearbyHtml || '<p class="no-sched">Нет данных</p>'}</div>
+          </section>
+        </div>
+      </div>`;
+
+    pageContent.scrollTop = 0;
+    pageContent.classList.remove('fade');
+    void pageContent.offsetWidth;
+    pageContent.classList.add('fade');
+
+    renderSchedule();
+    initMiniMap(stop);
+  }
+
+  function renderSchedule() {
+    const stop = byId[pageStopId];
+    if (!stop || !pageRoute) return;
+    const times = stop.schedule[pageRoute];
+    const grid = $('#sched-grid');
+    const next = $('#sched-next');
+    if (!times || !grid || !next) return;
+
+    const now = nowMin();
+    const d = new Date();
+    $('#sched-now').textContent = `Сейчас ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+    const nextIdx = times.findIndex(t => toMin(t) >= now);
+    if (nextIdx >= 0) {
+      const t = times[nextIdx];
+      const after = times[nextIdx + 1];
+      next.innerHTML = `<span class="n-time">${t}</span>
+        <span class="n-sub"><b>№${esc(pageRoute)}</b> · ${fmtWait(toMin(t) - now)}${after ? `<br>Следующий в ${after}` : '<br>Последний рейс сегодня'}</span>`;
+    } else {
+      next.innerHTML = `<span class="n-time">${times[0]}</span>
+        <span class="n-sub"><b>Рейсов сегодня больше нет</b><br>Первый завтра в ${times[0]}</span>`;
+    }
+
+    const groups = {};
+    times.forEach((t, i) => { const h = t.slice(0, 2); (groups[h] = groups[h] || []).push({ t, i }); });
+    grid.innerHTML = Object.keys(groups).sort().map(h => `
+      <div class="t-row">
+        <span class="t-hour">${h}</span>
+        <span class="t-mins">${groups[h].map(({ t, i }) => {
+          const cls = i === nextIdx ? 'next' : (toMin(t) < now ? 'past' : '');
+          return `<span class="t-min ${cls}" ${i === nextIdx ? 'aria-current="time"' : ''}>${t.slice(3)}</span>`;
+        }).join('')}</span>
+      </div>`).join('');
+
+    $$('.tab', pageContent).forEach(tab => tab.setAttribute('aria-selected', String(tab.dataset.tab === pageRoute)));
+    $$('.route-row .chip', pageContent).forEach(c => c.classList.toggle('active', c.dataset.route === pageRoute));
+  }
+
+  function initMiniMap(stop) {
+    if (miniMap) { miniMap.remove(); miniMap = null; }
+    const container = $('#mini-map');
+    if (!container) return;
+
+    miniMap = new maplibregl.Map({
+      container,
+      style: cloneStyle(currentStyle.style),
+      center: stop.coords,
+      zoom: 15.5,
+      attributionControl: false,
+      dragRotate: false,
+      pitchWithRotate: false
+    });
+
+    const mainEl = document.createElement('div');
+    mainEl.className = 'marker active';
+    mainEl.style.setProperty('--c', STATE[stop.state].color);
+    mainEl.innerHTML = `<span class="marker-pulse"></span><span class="marker-dot">${ICON_BUS}</span>`;
+    new maplibregl.Marker({ element: mainEl, anchor: 'center' }).setLngLat(stop.coords).addTo(miniMap);
+
+    const b = new maplibregl.LngLatBounds(stop.coords, stop.coords);
+    stop.nearby.forEach(nid => {
+      const n = byId[nid];
+      if (!n) return;
+      b.extend(n.coords);
+      const el = document.createElement('div');
+      el.className = 'marker small';
+      el.style.setProperty('--c', STATE[n.state].color);
+      el.title = n.name;
+      el.setAttribute('role', 'button');
+      el.setAttribute('aria-label', `Перейти к остановке ${n.name}`);
+      el.innerHTML = `<span class="marker-dot"></span>`;
+      el.addEventListener('click', e => { e.stopPropagation(); goToNearby(n.id); });
+      new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(n.coords).addTo(miniMap);
+    });
+
+    const mm = miniMap;
+    mm.on('load', () => {
+      mm.resize();
+      mm.fitBounds(b, { padding: 36, maxZoom: 16, duration: 0 });
+    });
+    setTimeout(() => { if (miniMap === mm) mm.resize(); }, 420);
+  }
+
+  function goToNearby(id) {
+    selectStop(id);
+    openStopPage(id);
+  }
+
+  pageContent.addEventListener('click', e => {
+    const tab = e.target.closest('[data-tab]');
+    if (tab) { pageRoute = tab.dataset.tab; renderSchedule(); return; }
+    const chip = e.target.closest('[data-route]');
+    if (chip && !chip.disabled) {
+      pageRoute = chip.dataset.route;
+      renderSchedule();
+      const grid = $('#sched-grid');
+      if (grid && window.innerWidth <= 900) grid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    const near = e.target.closest('[data-near]');
+    if (near) goToNearby(near.dataset.near);
+  });
+
+  $('#sp-close').addEventListener('click', closeStopPage);
+  $('#sp-close-2').addEventListener('click', closeStopPage);
+  stopPage.addEventListener('click', e => { if (e.target === stopPage) closeStopPage(); });
+
+  setInterval(() => { if (pageStopId) renderSchedule(); }, 30000);
+
+  // ================= SEARCH =================
+  const search = $('#search');
+  const results = $('#search-results');
+  let resultItems = [];
+  let activeIdx = -1;
+
+  function highlight(text, q) {
+    const safe = esc(text);
+    if (!q) return safe;
+    const i = text.toLowerCase().indexOf(q);
+    if (i < 0) return safe;
+    return esc(text.slice(0, i)) + '<mark>' + esc(text.slice(i, i + q.length)) + '</mark>' + esc(text.slice(i + q.length));
+  }
+
+  function runSearch() {
+    const q = search.value.trim().toLowerCase();
+    if (!q) { closeResults(); return; }
+    resultItems = STOPS.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      s.address.toLowerCase().includes(q) ||
+      s.buses.some(b => b.toLowerCase() === q || b.toLowerCase().startsWith(q))
+    ).slice(0, 8);
+    activeIdx = resultItems.length ? 0 : -1;
+
+    results.innerHTML = resultItems.length
+      ? resultItems.map((s, i) => {
+          const busMatch = s.buses.filter(b => b.toLowerCase().startsWith(q));
+          return `<li role="option" id="opt-${s.id}" data-id="${s.id}" aria-selected="${i === activeIdx}">
+            <span class="state-dot" style="background:${STATE[s.state].color};width:10px;height:10px;margin:0"></span>
+            <span><span class="r-name">${highlight(s.name, q)}</span><br>
+            <span class="r-sub">${highlight(s.address, q)}${busMatch.length ? ` · №${busMatch.map(esc).join(', №')}` : ''}</span></span>
+          </li>`;
+        }).join('')
+      : `<li class="empty" role="option" aria-disabled="true">Ничего не найдено</li>`;
+
+    results.classList.add('open');
+    search.setAttribute('aria-expanded', 'true');
+    updateActive();
+  }
+
+  function updateActive() {
+    $$('li[data-id]', results).forEach((li, i) => li.setAttribute('aria-selected', String(i === activeIdx)));
+    const cur = resultItems[activeIdx];
+    if (cur) search.setAttribute('aria-activedescendant', `opt-${cur.id}`);
+    else search.removeAttribute('aria-activedescendant');
+  }
+
+  function closeResults() {
+    results.classList.remove('open');
+    search.setAttribute('aria-expanded', 'false');
+    search.removeAttribute('aria-activedescendant');
+  }
+
+  function chooseResult(id) {
+    closeResults();
+    search.blur();
+    selectStop(id);
+  }
+
+  search.addEventListener('input', runSearch);
+  search.addEventListener('focus', () => { if (search.value.trim()) runSearch(); });
+  search.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' && resultItems.length) { e.preventDefault(); activeIdx = (activeIdx + 1) % resultItems.length; updateActive(); }
+    else if (e.key === 'ArrowUp' && resultItems.length) { e.preventDefault(); activeIdx = (activeIdx - 1 + resultItems.length) % resultItems.length; updateActive(); }
+    else if (e.key === 'Enter' && resultItems[activeIdx]) { e.preventDefault(); chooseResult(resultItems[activeIdx].id); }
+    else if (e.key === 'Escape') { search.value = ''; closeResults(); search.blur(); }
+  });
+  results.addEventListener('mousedown', e => {
+    const li = e.target.closest('li[data-id]');
+    if (li) { e.preventDefault(); chooseResult(li.dataset.id); }
+  });
+
+  // ================= POPOVERS =================
+  const popStyle = $('#pop-style');
+  const popLayers = $('#pop-layers');
+  const btnStyle = $('#btn-style');
+  const btnLayers = $('#btn-layers');
+
+  function togglePopover(pop, btn) {
+    const open = !pop.classList.contains('open');
+    closePopovers();
+    if (open) { pop.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
+  }
+  function closePopovers() {
+    [popStyle, popLayers].forEach(p => p.classList.remove('open'));
+    [btnStyle, btnLayers].forEach(b => b.setAttribute('aria-expanded', 'false'));
+  }
+
+  btnStyle.addEventListener('click', e => { e.stopPropagation(); togglePopover(popStyle, btnStyle); });
+  btnLayers.addEventListener('click', e => { e.stopPropagation(); togglePopover(popLayers, btnLayers); });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.popover') && !e.target.closest('.actions .icon-btn')) closePopovers();
+    if (!e.target.closest('.search-wrap')) closeResults();
+  });
+
+  // Style list
+  const styleList = $('#style-list');
+  function renderStyleList() {
+    styleList.innerHTML = STYLES.map(s => `
+      <button class="pop-item" role="menuitemradio" data-style="${s.id}" aria-checked="${s.id === currentStyle.id}">
+        <span class="swatch" style="background:${s.swatch}"></span>${s.name}<span class="check">${ICON_CHECK}</span>
+      </button>`).join('');
+  }
+  renderStyleList();
+
+  styleList.addEventListener('click', e => {
+    const item = e.target.closest('[data-style]');
+    if (!item) return;
+    const next = STYLES.find(s => s.id === item.dataset.style);
+    if (!next || next.id === currentStyle.id) return;
+    currentStyle = next;
+    document.body.classList.toggle('dark', next.dark);
+    map.setStyle(cloneStyle(next.style), { diff: false });
+    if (miniMap) miniMap.setStyle(cloneStyle(next.style), { diff: false });
+    renderStyleList();
+  });
+
+  // Layers
+  popLayers.addEventListener('click', e => {
+    const item = e.target.closest('[data-layer]');
+    if (!item) return;
+    const key = item.dataset.layer;
+    layerState[key] = !layerState[key];
+    item.setAttribute('aria-checked', String(layerState[key]));
+    if (key === 'route') {
+      ['route-casing', 'route-line'].forEach(l => {
+        if (map.getLayer(l)) map.setLayoutProperty(l, 'visibility', layerState.route ? 'visible' : 'none');
+      });
+      $('.legend .route-key').style.opacity = layerState.route ? '1' : '.4';
+    }
+    if (key === 'labels') document.body.classList.toggle('hide-labels', !layerState.labels);
+  });
+
+  // ================= LEGEND =================
+  const legendItems = $('#legend-items');
+  legendItems.innerHTML = Object.entries(STATE).map(([k, v]) => {
+    const count = STOPS.filter(s => s.state === k).length;
+    return `<button class="legend-item" data-state="${k}" aria-pressed="true" title="Показать/скрыть">
+      <span class="ldot" style="background:${v.color}"></span>${v.label}<span class="count">${count}</span>
+    </button>`;
+  }).join('');
+
+  legendItems.addEventListener('click', e => {
+    const item = e.target.closest('[data-state]');
+    if (!item) return;
+    const k = item.dataset.state;
+    if (visibleStates.has(k)) visibleStates.delete(k); else visibleStates.add(k);
+    item.setAttribute('aria-pressed', String(visibleStates.has(k)));
+    STOPS.forEach(s => {
+      const el = markers[s.id].getElement();
+      const show = visibleStates.has(s.state);
+      el.style.visibility = show ? '' : 'hidden';
+      if (!show && currentId === s.id) hideMini();
+    });
+  });
+
+  // ================= GEOLOCATION =================
+  const btnLocate = $('#btn-locate');
+  btnLocate.addEventListener('click', () => {
+    if (!('geolocation' in navigator)) { toast('Геолокация не поддерживается браузером'); return; }
+    btnLocate.classList.add('loading');
+    navigator.geolocation.getCurrentPosition(pos => {
+      btnLocate.classList.remove('loading');
+      btnLocate.classList.add('located');
+      const ll = [pos.coords.longitude, pos.coords.latitude];
+      if (!userMarker) {
+        const el = document.createElement('div');
+        el.className = 'user-marker';
+        el.setAttribute('aria-label', 'Вы здесь');
+        el.innerHTML = '<span class="u-halo"></span><span class="u-dot"></span>';
+        userMarker = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(ll).addTo(map);
+      } else {
+        userMarker.setLngLat(ll);
+      }
+      let nearest = null, best = Infinity;
+      STOPS.forEach(s => { const d = haversine(ll, s.coords); if (d < best) { best = d; nearest = s; } });
+      if (best < 30000) {
+        const b = new maplibregl.LngLatBounds(ll, ll).extend(nearest.coords);
+        map.fitBounds(b, { padding: { top: 140, bottom: 160, left: 120, right: 120 }, maxZoom: 16.5, duration: 1000 });
+        toast(`Ближайшая остановка: ${nearest.name} · ${fmtDist(best)}`);
+      } else {
+        map.flyTo({ center: ll, zoom: 14, duration: 1000 });
+        toast(`Вы далеко от остановок: ${fmtDist(best)} до «${nearest.name}»`);
+      }
+    }, err => {
+      btnLocate.classList.remove('loading');
+      const msg = { 1: 'Доступ к геолокации запрещён', 2: 'Местоположение недоступно', 3: 'Истекло время ожидания' }[err.code] || 'Не удалось определить местоположение';
+      toast(msg);
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+  });
+
+  // ================= KEYBOARD =================
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); search.focus(); search.select(); return; }
+    if (e.key === '/' && document.activeElement !== search && !e.target.closest('input')) { e.preventDefault(); search.focus(); return; }
+    if (e.key === 'Escape') {
+      if ($('.popover.open')) { closePopovers(); return; }
+      if (stopPage.classList.contains('open')) { closeStopPage(); return; }
+      if (miniCard.classList.contains('show')) hideMini();
+    }
+  });
+})();
 </script>
 </body>
 </html>
-HTMLEOF
-
-echo "✅ index.html создан"
-ls -la index.html
-wc -l index.html
