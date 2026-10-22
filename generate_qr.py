@@ -2,8 +2,11 @@
 import os
 import qrcode
 
-SITE_URL = "https://adambelarusets-bot.github.io/brest-stops/index.html"
-OUTPUT_DIR = os.path.expanduser("~/Desktop/brest_stops/qr_codes")
+# Ссылка на GitHub Pages (без index.html, чтобы работал hash-роутинг)
+SITE_URL = "https://adambelarusets-bot.github.io/brest-stops/"
+
+# Папка для сохранения (в проекте)
+OUTPUT_DIR = os.path.expanduser("~/Projects/brest_stops/qr_codes")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 STOPS = [

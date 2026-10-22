@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Остановки Бреста — Отчёт о сайте</title>
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Times New Roman", serif;
+  max-width: 900px; margin: 40px auto; padding: 20px;
+  color: #1a1a1a; background: #fff; line-height: 1.6;
+}
+h1 { font-size: 32px; font-weight: 700; margin-bottom: 10px; text-align: center; }
+h2 { font-size: 22px; font-weight: 600; margin-top: 30px; margin-bottom: 12px; color: #0a84ff; border-bottom: 2px solid #0a84ff; padding-bottom: 6px; }
+h3 { font-size: 16px; font-weight: 600; margin-top: 20px; margin-bottom: 8px; }
+p { font-size: 14px; margin-bottom: 12px; text-align: justify; }
+ul { margin-bottom: 12px; padding-left: 20px; }
+li { font-size: 14px; margin-bottom: 6px; }
+.meta { text-align: center; font-size: 13px; color: #444; margin-bottom: 30px; line-height: 1.8; }
+.section { margin-bottom: 30px; }
+.note { background: #f0f7ff; border-left: 4px solid #0a84ff; padding: 12px 16px; margin: 16px 0; font-size: 13px; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+th { background: #f5f5f5; font-weight: 600; }
+img { max-width: 100%; border-radius: 12px; margin: 10px 0; border: 1px solid #ddd; }
+.screenshot-caption { text-align: center; font-size: 12px; color: #666; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<h1>Остановки Бреста — Электронный атлас</h1>
+<div class="meta">
+  <strong>Выполнил:</strong> Белорусец Адам, учащийся 9 «Б» класса<br>
+  <strong>Проект:</strong> Интерактивная карта остановок микрорайона Речица<br>
+  <strong>Инструменты:</strong> Visual Studio Code, HTML, CSS, JavaScript<br>
+  Брест, 2026
+</div>
+
+<div class="section">
+<h2>1. Что это такое?</h2>
+<p><strong>«Остановки Бреста»</strong> — это интерактивное веб-приложение (электронный атлас), которое показывает все остановки общественного транспорта микрорайона Речица на карте. Сайт создан для того, чтобы жители и гости города могли быстро находить нужную остановку, смотреть её состояние, покрытие, наличие инфраструктуры и расписание автобусов.</p>
+<p>Сайт работает на любом устройстве: на компьютере, планшете и телефоне. Он не требует установки — достаточно открыть ссылку в браузере.</p>
+</div>
+
+<div class="section">
+<h2>2. Где и как делал?</h2>
+<p>Сайт написан в <strong>Visual Studio Code</strong> на языках <strong>HTML, CSS и JavaScript</strong>. Для отображения карты использована библиотека <strong>MapLibre GL</strong> (открытая и бесплатная альтернатива Google Maps). Данные об остановках хранятся в самом коде (массив <code>STOPS</code>).</p>
+<p>Дизайн выполнен в стиле <strong>macOS 26 Tahoe</strong> (жидкое стекло, тёмная тема, плавные анимации). Это делает сайт не только функциональным, но и эстетичным.</p>
+<p>Сайт задеплоен на <strong>GitHub Pages</strong> — это бесплатный хостинг, который позволяет открыть сайт по ссылке:</p>
+<div class="note">
+  <strong>Ссылка на сайт:</strong> https://adambelarusets-bot.github.io/brest-stops/
+</div>
+</div>
+
+<div class="section">
+<h2>3. Что происходит на сайте? (Как работает)</h2>
+<p>Когда пользователь открывает сайт, он видит карту с маркерами остановок. Каждый маркер — это цветной кружок, который показывает состояние остановки:</p>
+<ul>
+  <li><strong>Зелёный</strong> — хорошее состояние.</li>
+  <li><strong>Оранжевый</strong> — удовлетворительное.</li>
+  <li><strong>Красный</strong> — требует внимания.</li>
+</ul>
+<p>Если нажать на маркер, появляется <strong>маленькое окно</strong> (снизу слева) с краткой информацией: название, адрес, автобусы, состояние, покрытие, сквер, магазин, урны, лавочки, деревья, тренажеры.</p>
+<p>Если нажать кнопку «Подробнее», открывается <strong>большое окно</strong> (на весь экран) с полным расписанием, описанием, маршрутами и мини-картой.</p>
+<p>Также на сайте есть <strong>поиск</strong> (по названию или номеру автобуса) и <strong>кнопка GPS</strong> (показывает твоё местоположение на карте).</p>
+</div>
+
+<div class="section">
+<h2>4. В чём смысл? (Зачем нужен сайт)</h2>
+<p>Сайт решает несколько задач:</p>
+<ul>
+  <li><strong>Для жителей:</strong> быстро найти остановку, узнать, какие автобусы ходят, и когда будет следующий.</li>
+  <li><strong>Для гостей города:</strong> не заблудиться в незнакомом районе.</li>
+  <li><strong>Для городских служб:</strong> увидеть, какие остановки требуют ремонта (по цвету маркера).</li>
+  <li><strong>Для исследования:</strong> сайт создан в рамках НПК по географии, чтобы показать, как можно визуализировать данные об остановках.</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>5. Почему полезно и удобно?</h2>
+<ul>
+  <li><strong>Всё в одном месте:</strong> карта, расписание, инфраструктура — не нужно искать по разным сайтам.</li>
+  <li><strong>Наглядно:</strong> цветные маркеры сразу показывают состояние остановок.</li>
+  <li><strong>Быстро:</strong> сайт загружается за 1-2 секунды.</li>
+  <li><strong>Удобно:</strong> работает на телефоне (адаптивный дизайн).</li>
+  <li><strong>Современно:</strong> дизайн в стиле macOS 26 (жидкое стекло).</li>
+  <li><strong>Бесплатно:</strong> сайт работает на GitHub Pages, не требует оплаты хостинга.</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>6. Особенности интерфейса</h2>
+<p>Интерфейс сайта состоит из нескольких элементов:</p>
+<ul>
+  <li><strong>Шапка:</strong> логотип «Брест», строка поиска, кнопки стиля карты, слоёв и GPS.</li>
+  <li><strong>Карта:</strong> на весь экран, с тёмным стилем (как в macOS).</li>
+  <li><strong>Маленькое окно:</strong> появляется при клике на маркер, показывает краткую информацию.</li>
+  <li><strong>Большое окно:</strong> открывается по кнопке «Подробнее», показывает полное расписание и описание.</li>
+  <li><strong>Легенда:</strong> в правом нижнем углу, объясняет цвета маркеров.</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>7. Скриншоты</h2>
+<p>Вот как выглядит сайт:</p>
+<img src="screenshot1.jpg" alt="Скриншот 1" onerror="this.style.display='none'">
+<div class="screenshot-caption">Главная страница с картой и маркерами</div>
+<img src="screenshot2.jpg" alt="Скриншот 2" onerror="this.style.display='none'">
+<div class="screenshot-caption">Маленькое окно с информацией об остановке</div>
+<img src="screenshot3.jpg" alt="Скриншот 3" onerror="this.style.display='none'">
+<div class="screenshot-caption">Большое окно с расписанием</div>
+<img src="screenshot4.jpg" alt="Скриншот 4" onerror="this.style.display='none'">
+<div class="screenshot-caption">Слои и легенда</div>
+<p><em>(Если скриншоты не отображаются, проверь, что файлы screenshot1.jpg...screenshot4.jpg лежат в папке brest_stops.)</em></p>
+</div>
+
+<div class="section">
+<h2>8. Планы по развитию</h2>
+<ul>
+  <li>Добавить все 10 остановок (сейчас 6).</li>
+  <li>Сделать экспорт в PDF для печати.</li>
+  <li>Добавить статистику (графики).</li>
+  <li>Улучшить дизайн (убрать белые панели).</li>
+  <li>Задеплоить на свой домен (bresttransport.by).</li>
+</ul>
+</div>
+
+</body>
+</html>
